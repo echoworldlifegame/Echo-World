@@ -21,7 +21,7 @@ export default function Home() {
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setMessage(error.message)
-      else setMessage('✅ Login successful! Welcome to Echo World!')
+      else window.location.href = '/feed'
     } else {
       const { data, error } = await supabase.auth.signUp({ email, password })
       if (error) {
@@ -32,7 +32,8 @@ export default function Home() {
           username: username,
           full_name: username,
         })
-        setMessage('✅ Account created! Check your email to verify.')
+        setMessage('✅ Account created! Please login now.')
+        setIsLogin(true)
       }
     }
     setLoading(false)
@@ -40,22 +41,17 @@ export default function Home() {
 
   return (
     <div style={{
-      minHeight:'100vh',
-      display:'flex',
-      alignItems:'center',
+      minHeight:'100vh',display:'flex',alignItems:'center',
       justifyContent:'center',
       background:'linear-gradient(135deg,#070a10,#0c1018)',
       padding:'20px',
     }}>
       <div style={{width:'100%',maxWidth:'420px'}}>
-
         <div style={{textAlign:'center',marginBottom:'40px'}}>
           <div style={{
-            fontSize:'36px',
-            fontWeight:'800',
+            fontSize:'36px',fontWeight:'800',
             background:'linear-gradient(90deg,#00e5ff,#00ff88)',
-            WebkitBackgroundClip:'text',
-            WebkitTextFillColor:'transparent',
+            WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',
             marginBottom:'8px',
           }}>ECHO⬡WORLD</div>
           <div style={{color:'#4a5568',fontSize:'14px'}}>Life is a Game. Explore the World.</div>
@@ -64,15 +60,11 @@ export default function Home() {
         <div style={{
           background:'#111620',
           border:'1px solid rgba(255,255,255,0.07)',
-          borderRadius:'20px',
-          padding:'32px',
+          borderRadius:'20px',padding:'32px',
         }}>
           <div style={{
-            display:'flex',
-            background:'#0c1018',
-            borderRadius:'12px',
-            padding:'4px',
-            marginBottom:'28px',
+            display:'flex',background:'#0c1018',
+            borderRadius:'12px',padding:'4px',marginBottom:'28px',
           }}>
             <button onClick={() => setIsLogin(true)} style={{
               flex:1,padding:'10px',border:'none',borderRadius:'10px',cursor:'pointer',
@@ -93,9 +85,10 @@ export default function Home() {
               <div style={{fontSize:'12px',color:'#4a5568',marginBottom:'6px'}}>USERNAME</div>
               <input type="text" placeholder="your_username" value={username}
                 onChange={e => setUsername(e.target.value)}
-                style={{width:'100%',background:'#0c1018',border:'1px solid rgba(255,255,255,0.07)',
-                  borderRadius:'10px',padding:'12px 16px',color:'#eef2f7',fontSize:'14px',
-                  outline:'none',boxSizing:'border-box'}}/>
+                style={{width:'100%',background:'#0c1018',
+                  border:'1px solid rgba(255,255,255,0.07)',
+                  borderRadius:'10px',padding:'12px 16px',color:'#eef2f7',
+                  fontSize:'14px',outline:'none',boxSizing:'border-box'}}/>
             </div>
           )}
 
@@ -103,18 +96,20 @@ export default function Home() {
             <div style={{fontSize:'12px',color:'#4a5568',marginBottom:'6px'}}>EMAIL</div>
             <input type="email" placeholder="you@example.com" value={email}
               onChange={e => setEmail(e.target.value)}
-              style={{width:'100%',background:'#0c1018',border:'1px solid rgba(255,255,255,0.07)',
-                borderRadius:'10px',padding:'12px 16px',color:'#eef2f7',fontSize:'14px',
-                outline:'none',boxSizing:'border-box'}}/>
+              style={{width:'100%',background:'#0c1018',
+                border:'1px solid rgba(255,255,255,0.07)',
+                borderRadius:'10px',padding:'12px 16px',color:'#eef2f7',
+                fontSize:'14px',outline:'none',boxSizing:'border-box'}}/>
           </div>
 
           <div style={{marginBottom:'24px'}}>
             <div style={{fontSize:'12px',color:'#4a5568',marginBottom:'6px'}}>PASSWORD</div>
             <input type="password" placeholder="••••••••" value={password}
               onChange={e => setPassword(e.target.value)}
-              style={{width:'100%',background:'#0c1018',border:'1px solid rgba(255,255,255,0.07)',
-                borderRadius:'10px',padding:'12px 16px',color:'#eef2f7',fontSize:'14px',
-                outline:'none',boxSizing:'border-box'}}/>
+              style={{width:'100%',background:'#0c1018',
+                border:'1px solid rgba(255,255,255,0.07)',
+                borderRadius:'10px',padding:'12px 16px',color:'#eef2f7',
+                fontSize:'14px',outline:'none',boxSizing:'border-box'}}/>
           </div>
 
           {message && (
