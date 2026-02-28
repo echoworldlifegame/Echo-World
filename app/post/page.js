@@ -93,7 +93,7 @@ export default function Post() {
   }
 
   const showMediaUpload = postType === 'photo' || postType === 'video' || postType === 'capsule'
-  const acceptType = postType === 'video' ? 'video/*' : 'image/*'
+  const acceptType = postType === 'video' || (postType === 'capsule' && mediaMode === 'video') ? 'video/*' : 'image/*'
 
   return (
     <div style={{minHeight:'100vh',background:'#070a10',color:'#eef2f7'}}>
