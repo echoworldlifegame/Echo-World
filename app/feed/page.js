@@ -24,7 +24,7 @@ export default function Feed() {
     const { data } = await supabase
       .from('posts')
       .select('*, profiles(id, username, full_name, avatar_url)')
-      .eq('privacy', 'public')
+      
       .order('created_at', { ascending: false })
     setPosts(data || [])
     setLoading(false)
