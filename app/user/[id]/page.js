@@ -31,19 +31,35 @@ export default function UserProfile({ params }) {
   }, [params.id])
 
   const toggleSupport = async () => {
-    if (!currentUser) return
-    if (isSupporting) {
-      await supabase.from('followers').delete().eq('follower_id', currentUser.id).eq('following_id', params.id)
-      await supabase.from('profiles').update({ followers_count: Math.max((profile.followers_count||1)-1, 0) }).eq('id', params.id)
-      setProfile({...profile, followers_count: Math.max((profile.followers_count||1)-1, 0)})
-      setIsSupporting(false)
-    } else {
-      await supabase.from('followers').insert({ follower_id: currentUser.id, following_id: params.id })
-      await supabase.from('profiles').update({ followers_count: (profile.followers_count||0)+1 }).eq('id', params.id)
-      await supabase.from('notifications').insert({ user_id: params.id, from_user_id: currentUser.id, type: 'follow' })
-      setProfile({...profile, followers_count: (profile.followers_count||0)+1})
-      setIsSupporting(true)
-    }
+  const toggleSupport = async () => {
+  if (!currentUser) return
+  if (isSupporting) {
+    await supabase.from('followers')
+      .delete()
+      .eq('follower_id', currentUser.id)
+      .eq('following_id', params.id)
+    await supabase.from('profiles')
+      .update({ followers_count: Math.max((profile.followers_count||1)-1, 0) })
+      .eq('id', params.id)
+    await supabase.from('profiles')
+      .update({ following_count: Math.max((profile.following_count||1)-1, 0) })
+      .eq('id', currentUser.id)
+    setProfile({...profile, followers_count: Math.max((profile.followers_count||1)-1, 0)})
+    setIsSupporting(false)
+  } else {
+    await supabase.from('followers')
+      .insert({ follower_id: currentUser.id, following_id: params.id })
+    await supabase.from('profiles')
+      .update({ followers_count: (profile.followers_count||0)+1 })
+      .eq('id', params.id)
+    await supabase.from('profiles')
+      .update({ following_count: (profile.following_count||0)+1 })
+      .eq('id', currentUser.id)
+    await supabase.from('notifications')
+      .insert({ user_id: params.id, from_user_id: currentUser.id, type: 'follow' })
+    setProfile({...profile, followers_count: (profile.followers_count||0)+1})
+    setIsSupporting(true)
+  }
   }
 
   const timeAgo = (date) => {
