@@ -22,11 +22,8 @@ export default function Feed() {
   }, [])
 
   const loadPosts = async (userId) => {
-    // Get supporter IDs first
     const { data: following } = await supabase
-      .from('followers')
-      .select('following_id')
-      .eq('follower_id', userId)
+      .from('followers').select('following_id').eq('follower_id', userId)
     const followingIds = (following || []).map(f => f.following_id)
 
     const { data } = await supabase
@@ -36,12 +33,11 @@ export default function Feed() {
 
     if (!data) { setLoading(false); return }
 
-    // Sort: supporters first, then others
     const sorted = [...data].sort((a, b) => {
-      const aFollowed = followingIds.includes(a.user_id)
-      const bFollowed = followingIds.includes(b.user_id)
-      if (aFollowed && !bFollowed) return -1
-      if (!aFollowed && bFollowed) return 1
+      const aF = followingIds.includes(a.user_id)
+      const bF = followingIds.includes(b.user_id)
+      if (aF && !bF) return -1
+      if (!aF && bF) return 1
       return new Date(b.created_at) - new Date(a.created_at)
     })
 
@@ -49,10 +45,17 @@ export default function Feed() {
     setLoading(false)
   }
 
-  const handleLike = async (postId) => {
+  const handleLike = async (postId, currentLikes, isLiked) => {
     if (!user) return
-    await supabase.from('likes').insert({ user_id: user.id, post_id: postId })
-    setPosts(p => p.map(x => x.id === postId ? {...x, likes_count: (x.likes_count||0)+1} : x))
+    if (isLiked) {
+      await supabase.from('likes').delete().eq('user_id', user.id).eq('post_id', postId)
+      await supabase.from('posts').update({ likes_count: Math.max((currentLikes||1)-1,0) }).eq('id', postId)
+      setPosts(p => p.map(x => x.id === postId ? {...x, likes_count: Math.max((x.likes_count||1)-1,0), _liked: false} : x))
+    } else {
+      await supabase.from('likes').insert({ user_id: user.id, post_id: postId })
+      await supabase.from('posts').update({ likes_count: (currentLikes||0)+1 }).eq('id', postId)
+      setPosts(p => p.map(x => x.id === postId ? {...x, likes_count: (x.likes_count||0)+1, _liked: true} : x))
+    }
   }
 
   const timeAgo = (date) => {
@@ -82,6 +85,7 @@ export default function Feed() {
           <div style={{fontSize:'20px',fontWeight:'800',background:'linear-gradient(90deg,#00e5ff,#00ff88)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>ECHO⬡WORLD</div>
           <div style={{display:'flex',gap:'8px'}}>
             <button onClick={()=>window.location.href='/search'} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'6px 14px',color:'#8892a4',fontSize:'13px',cursor:'pointer'}}>🔍</button>
+            <button onClick={()=>window.location.href='/notifications'} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'6px 14px',color:'#8892a4',fontSize:'13px',cursor:'pointer'}}>🔔</button>
             <button onClick={async()=>{await supabase.auth.signOut();window.location.href='/'}} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'6px 14px',color:'#8892a4',fontSize:'13px',cursor:'pointer'}}>Logout</button>
           </div>
         </div>
@@ -152,7 +156,7 @@ export default function Feed() {
                 {post.location_name && <div style={{fontSize:'11px',color:'#00e5ff',marginTop:'1px'}}>📍 {post.location_name}</div>}
               </div>
               <div style={{fontSize:'11px',color:'#4a5568',flexShrink:0,textAlign:'right'}}>
-                <div>{timeAgo(post.created_at)}</div>
+                {timeAgo(post.created_at)}
               </div>
             </div>
 
@@ -163,7 +167,6 @@ export default function Feed() {
                 <div>
                   <div style={{fontSize:'13px',fontWeight:'700',color:'#ffca28'}}>🔒 Time Capsule</div>
                   <div style={{fontSize:'11px',color:'#4a5568',marginTop:'2px'}}>Visit within 300m to unlock</div>
-                  {post.location_name && <div style={{fontSize:'11px',color:'#4a5568'}}>📍 {post.location_name}</div>}
                 </div>
               </div>
             )}
@@ -185,16 +188,24 @@ export default function Feed() {
 
             {/* Actions */}
             <div style={{display:'flex',padding:'6px 6px 12px',borderTop:'1px solid rgba(255,255,255,0.04)',marginTop:'4px',gap:'4px'}}>
-              <button onClick={()=>handleLike(post.id)} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 10px',border:'none',background:'none',cursor:'pointer',color:'#4a5568',fontSize:'13px',borderRadius:'8px'}}>
-                ❤️ {post.likes_count||0}
+              <button
+                onClick={()=>handleLike(post.id, post.likes_count, post._liked)}
+                style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 10px',border:'none',background:'none',cursor:'pointer',color:post._liked?'#ff4560':'#4a5568',fontSize:'13px',borderRadius:'8px'}}>
+                {post._liked?'❤️':'🤍'} {post.likes_count||0}
               </button>
-              <button style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 10px',border:'none',background:'none',cursor:'pointer',color:'#4a5568',fontSize:'13px',borderRadius:'8px'}}>
+              <button
+                onClick={()=>window.location.href=`/comments/${post.id}`}
+                style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 10px',border:'none',background:'none',cursor:'pointer',color:'#4a5568',fontSize:'13px',borderRadius:'8px'}}>
                 💬 {post.comments_count||0}
               </button>
-              <button onClick={()=>navigator.share?.({text:post.content||'',url:window.location.href})} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 10px',border:'none',background:'none',cursor:'pointer',color:'#4a5568',fontSize:'13px',borderRadius:'8px'}}>
+              <button
+                onClick={()=>navigator.share?.({text:post.content||'',url:window.location.href})}
+                style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 10px',border:'none',background:'none',cursor:'pointer',color:'#4a5568',fontSize:'13px',borderRadius:'8px'}}>
                 ↗ Share
               </button>
-              <button onClick={()=>window.location.href='/map'} style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:'4px',padding:'7px 10px',border:'none',background:'none',cursor:'pointer',color:'#00e5ff',fontSize:'12px'}}>
+              <button
+                onClick={()=>window.location.href='/map'}
+                style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:'4px',padding:'7px 10px',border:'none',background:'none',cursor:'pointer',color:'#00e5ff',fontSize:'12px'}}>
                 🗺 Map
               </button>
             </div>
@@ -203,4 +214,4 @@ export default function Feed() {
       </div>
     </div>
   )
-      }
+        }
