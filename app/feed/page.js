@@ -205,7 +205,7 @@ export default function Feed() {
               fontSize: '16px', flexShrink: 0,
               opacity: !deferredPrompt && !installed ? 0.4 : 1,
             }}>
-            {installed ? '✓' : '📲'}
+            {installed ? '✓' : 'APP'}
           </button>
 
           {/* Settings */}
