@@ -3,5 +3,5 @@
   <rect x="8" y="8" width="496" height="496" rx="96" fill="none" stroke="#00ff88" stroke-width="16"/>
   <polygon points="256,70 390,150 390,310 256,390 122,310 122,150" fill="none" stroke="#00e5ff" stroke-width="18"/>
   <text x="256" y="280" text-anchor="middle" font-family="Arial Black,sans-serif" font-weight="900" font-size="130" fill="#00e5ff">E</text>
-  <text x="256" y="460" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="80" fill="#00ff88" letter-spacing="8">APP</text>
+  <text x="256" y="460" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="80" fill="#00ff88" letter-spacing="8">WORLD</text>
 </svg>
