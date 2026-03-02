@@ -79,7 +79,7 @@ export default function MapPage() {
     })
 
     // Street map tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '© OpenStreetMap',
       maxZoom: 19,
     }).addTo(map)
@@ -542,7 +542,7 @@ export default function MapPage() {
           0%,100%{opacity:1}50%{opacity:0.3}
         }
         .leaflet-container{background:#0a0f18!important}
-        .leaflet-tile{filter:brightness(0.7) saturate(1.1)!important}
+        .leaflet-tile{filter:brightness(0.85) saturate(1.2) hue-rotate(180deg)!important}
       `}</style>
     </div>
   )
