@@ -167,7 +167,7 @@ export default function Feed() {
               {notifCount>0&&<div style={{position:'absolute',top:'-4px',right:'-4px',background:'#ff4560',borderRadius:'50%',width:'16px',height:'16px',fontSize:'9px',fontWeight:'700',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}>{notifCount}</div>}
             </div>
             <button onClick={toggleAutoplay} title={autoplay?'Autoplay ON':'Autoplay OFF'} style={{background:autoplay?'rgba(0,229,255,0.1)':'rgba(255,255,255,0.05)',border:`1px solid ${autoplay?'rgba(0,229,255,0.3)':'rgba(255,255,255,0.1)'}`,borderRadius:'20px',padding:'6px 10px',color:autoplay?'#00e5ff':'#4a5568',fontSize:'12px',cursor:'pointer'}}>
-              {autoplay?'▶ Auto':'⏸ Auto'}
+              <button onClick={()=>window.location.href='/settings'} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'6px 12px',color:'#8892a4',fontSize:'13px',cursor:'pointer'}}>⚙️</button>
             </button>
             <button onClick={async()=>{await supabase.auth.signOut();window.location.href='/'}} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'20px',padding:'6px 12px',color:'#8892a4',fontSize:'12px',cursor:'pointer'}}>Logout</button>
           </div>
