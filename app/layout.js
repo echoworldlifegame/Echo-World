@@ -1,5 +1,4 @@
 export const metadata = {
-export const metadata = {
   title: 'Echo World',
   description: 'Location-based social media RPG',
   manifest: '/manifest.json',
@@ -10,7 +9,6 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false,
 }
 
 export default function RootLayout({ children }) {
@@ -35,3 +33,4 @@ export default function RootLayout({ children }) {
       </body>
     </html>
   )
+}
