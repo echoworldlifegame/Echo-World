@@ -390,6 +390,7 @@ export default function Profile() {
         {/* ── QUICK ACTIONS ── */}
         <div style={{ display: 'flex', gap: '8px', padding: '14px 16px 0', overflowX: 'auto', scrollbarWidth: 'none' }}>
           {[
+      { icon: '💎', label: 'Invest', path: '/invest' },
       { icon: '📸', label: 'New Post', path: '/post' },
       { icon: '🗺', label: 'My Map', path: '/map' },
       { icon: '👥', label: 'Community', path: '/community' },
