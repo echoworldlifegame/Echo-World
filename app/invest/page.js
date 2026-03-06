@@ -1334,6 +1334,7 @@ export default function Invest() {
       </div>
 
       {/* Bottom nav */}
+      <div onClick={() => window.location.href='/support'} style={{ fontSize:'22px', cursor:'pointer' }}>💬</div>
       <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(5,8,16,0.98)', borderTop:'1px solid rgba(255,255,255,0.07)', display:'flex', justifyContent:'space-around', padding:'10px 0 20px', zIndex:100 }}>
         {[{icon:'🏠',path:'/feed'},{icon:'🗺',path:'/map'},{icon:'📸',path:'/post'},{icon:'🏆',path:'/leaderboard'},{icon:'👤',path:'/profile'}].map(item => (
           <div key={item.path} onClick={() => window.location.href=item.path} style={{ fontSize:'22px', cursor:'pointer', color:'#4a5568' }}>{item.icon}</div>
