@@ -73,32 +73,51 @@ export default function Admin() {
   }
 
   const loadInvestment = async () => {
-    const { data: deps } = await supabase
+    // Deposits with profile info
+    const { data: deps, error: depErr } = await supabase
       .from('deposit_requests')
-      .select('*, profiles(id, username, full_name, email)')
+      .select(`
+        *,
+        profiles!deposit_requests_user_id_fkey(id, username, full_name)
+      `)
       .order('requested_at', { ascending: false })
+    if (depErr) console.error('deposits error:', depErr)
     setDeposits(deps || [])
 
-    const { data: wds } = await supabase
+    // Withdrawals with profile info
+    const { data: wds, error: wdErr } = await supabase
       .from('withdrawal_requests')
-      .select('*, profiles(id, username, full_name)')
+      .select(`
+        *,
+        profiles!withdrawal_requests_user_id_fkey(id, username, full_name)
+      `)
       .order('requested_at', { ascending: false })
+    if (wdErr) console.error('withdrawals error:', wdErr)
     setWithdrawals(wds || [])
 
-    const { data: invUsers } = await supabase
+    // Investment accounts with profile info
+    const { data: invUsers, error: invErr } = await supabase
       .from('investment_accounts')
-      .select('*, profiles(id, username, full_name, avatar_url)')
+      .select(`
+        *,
+        profiles!investment_accounts_user_id_fkey(id, username, full_name, avatar_url)
+      `)
       .order('created_at', { ascending: false })
+    if (invErr) console.error('invest accounts error:', invErr)
     setInvestUsers(invUsers || [])
 
-    // Password reset requests
-    const { data: resets } = await supabase
+    // Password reset requests — notifications table থেকে
+    const { data: resets, error: resetErr } = await supabase
       .from('notifications')
-      .select('*, profiles(username, full_name)')
+      .select(`
+        *,
+        profiles!notifications_user_id_fkey(id, username, full_name)
+      `)
       .eq('type', 'system')
       .ilike('message', 'PASSWORD_RESET_REQUEST%')
       .eq('read', false)
       .order('created_at', { ascending: false })
+    if (resetErr) console.error('resets error:', resetErr)
     setPasswordResetRequests(resets || [])
   }
 
