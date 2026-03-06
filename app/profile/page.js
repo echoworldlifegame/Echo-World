@@ -390,10 +390,12 @@ export default function Profile() {
         {/* ── QUICK ACTIONS ── */}
         <div style={{ display: 'flex', gap: '8px', padding: '14px 16px 0', overflowX: 'auto', scrollbarWidth: 'none' }}>
           {[
-            { icon: '📸', label: 'New Post', path: '/post' },
-            { icon: '🗺', label: 'My Map', path: '/map' },
-            { icon: '🏆', label: 'Leaderboard', path: '/leaderboard' },
-            { icon: '⚙️', label: 'Settings', path: '/settings' },
+      { icon: '📸', label: 'New Post', path: '/post' },
+      { icon: '🗺', label: 'My Map', path: '/map' },
+      { icon: '👥', label: 'Community', path: '/community' },
+      { icon: '💬', label: 'Messages', path: '/dm' },
+      { icon: '🏆', label: 'Leaderboard', path: '/leaderboard' },
+      { icon: '⚙️', label: 'Settings', path: '/settings' },
           ].map(a => (
             <button key={a.label} onClick={() => window.location.href = a.path}
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '10px 14px', background: '#111620', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', cursor: 'pointer', flexShrink: 0 }}>
