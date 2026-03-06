@@ -137,7 +137,7 @@ export default function UserProfile() {
   }
 
   const handleMessage = () => {
-    window.location.href = `/messages/${id}`
+    window.location.href = `/dm?user=${id}`
   }
 
   const filteredPosts = posts.filter(p => {
