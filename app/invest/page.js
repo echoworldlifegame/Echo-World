@@ -939,21 +939,6 @@ export default function Invest() {
           <div style={{ marginBottom:'12px', position:'relative', overflow:'hidden', borderRadius:'16px' }}>
             {/* Slides */}
             {[
-              /* Slide 0 — Daily Earning */
-              <div key={0} style={{ background:'linear-gradient(145deg,#020b18,#041428)', border:'1px solid rgba(0,229,255,0.2)', borderRadius:'16px', padding:'18px 16px', position:'relative', overflow:'hidden' }}>
-                <div style={{ position:'absolute', top:'-40px', right:'-40px', width:'160px', height:'160px', background:'radial-gradient(circle,rgba(0,229,255,0.12),transparent 60%)', borderRadius:'50%' }} />
-                <div style={{ display:'inline-flex', alignItems:'center', gap:'5px', background:'rgba(0,255,136,0.1)', border:'1px solid rgba(0,255,136,0.3)', borderRadius:'20px', padding:'3px 10px', fontSize:'10px', color:'#00ff88', fontWeight:'700', marginBottom:'12px' }}>✅ আজকের আয় · TODAY</div>
-                <div style={{ fontSize:'42px', fontWeight:'900', background:'linear-gradient(90deg,#00e5ff,#00ff88)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', lineHeight:1, marginBottom:'4px' }}>$24.75</div>
-                <div style={{ fontSize:'11px', color:'#4a5568', marginBottom:'14px' }}>মাত্র $825 বিনিয়োগ থেকে</div>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'6px' }}>
-                  {[{l:'আজ',v:'$24.75',c:'#00e5ff'},{l:'মাসে',v:'$742',c:'#00ff88'},{l:'বার্ষিক',v:'$9,033',c:'#ffa500'}].map(s=>(
-                    <div key={s.l} style={{ background:'rgba(255,255,255,0.04)', borderRadius:'10px', padding:'8px', textAlign:'center' }}>
-                      <div style={{ fontSize:'13px', fontWeight:'900', color:s.c }}>{s.v}</div>
-                      <div style={{ fontSize:'9px', color:'#4a5568', marginTop:'2px' }}>{s.l}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>,
               /* Slide 1 — Referral */
               <div key={1} style={{ background:'linear-gradient(145deg,#0a0520,#140830)', border:'1px solid rgba(168,85,247,0.25)', borderRadius:'16px', padding:'18px 16px', position:'relative', overflow:'hidden' }}>
                 <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:'200px', height:'200px', background:'radial-gradient(circle,rgba(168,85,247,0.08),transparent 60%)', borderRadius:'50%', pointerEvents:'none' }} />
@@ -991,27 +976,6 @@ export default function Invest() {
                   ))}
                 </div>
               </div>,
-              /* Slide 3 — Join */
-              <div key={3} style={{ background:'linear-gradient(145deg,#020b18,#041428)', border:'1px solid rgba(0,255,136,0.2)', borderRadius:'16px', overflow:'hidden' }}>
-                <div style={{ background:'linear-gradient(135deg,rgba(0,229,255,0.08),rgba(0,255,136,0.05))', padding:'18px 16px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px' }}>
-                    <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:'linear-gradient(135deg,#00e5ff,#00ff88)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', fontWeight:'900', color:'#050810', boxShadow:'0 0 20px rgba(0,229,255,0.3)' }}>E</div>
-                    <div style={{ fontSize:'18px', fontWeight:'900', background:'linear-gradient(90deg,#00e5ff,#00ff88)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>ECHO WORLD</div>
-                  </div>
-                  <div style={{ fontSize:'12px', color:'#6b7280' }}>বাংলাদেশের সেরা ডেইলি আর্নিং প্ল্যাটফর্ম</div>
-                </div>
-                <div style={{ padding:'14px 16px' }}>
-                  {[{n:'1',t:'সাইন আপ করুন'},{n:'2',t:'$100 USDT জমা দিন'},{n:'3',t:'প্রতিদিন পোস্ট করুন'},{n:'4',t:'১৪ ও ২৮ তারিখ withdraw করুন'}].map(s=>(
-                    <div key={s.n} style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'8px' }}>
-                      <div style={{ width:'22px', height:'22px', borderRadius:'50%', background:'rgba(0,229,255,0.1)', border:'1px solid rgba(0,229,255,0.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', fontWeight:'700', color:'#00e5ff', flexShrink:0 }}>{s.n}</div>
-                      <div style={{ fontSize:'12px', color:'#8892a4' }}>{s.t}</div>
-                    </div>
-                  ))}
-                  <div style={{ background:'linear-gradient(135deg,#00e5ff,#00ff88)', borderRadius:'12px', padding:'12px', textAlign:'center', marginTop:'10px' }}>
-                    <div style={{ fontSize:'14px', fontWeight:'900', color:'#050810' }}>🚀 এখনই যোগ দিন</div>
-                  </div>
-                </div>
-              </div>
             ][slideIndex]}
 
             {/* Dots */}
