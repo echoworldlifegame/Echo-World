@@ -9,7 +9,7 @@ const supabase = createClient(
 )
 
 const OFFER_END     = new Date('2027-06-30')
-const USDT_ADDRESS  = 'YOUR_USDT_TRC20_ADDRESS'
+const USDT_ADDRESS  = 'TEU8tVcEifGgTCxkpCXKw3SMfeoFNfAWkJ'
 const MIN_DEPOSIT   = 100
 const CLOUDINARY_CLOUD  = 'dbguxwpa8'
 const CLOUDINARY_PRESET = 'echoworld_preset'
