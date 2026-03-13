@@ -1,5 +1,5 @@
 const CACHE = 'echoworld-v1'
-const OFFLINE_URLS = ['/', '/feed', '/echo', '/map']
+const OFFLINE_URLS = ['/', '/feed', '/echo', '/map', '/browser.html']
 
 self.addEventListener('install', e => {
   e.waitUntil(
