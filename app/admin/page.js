@@ -1579,7 +1579,7 @@ New: ${newBal}`)
                     style={{ width:'40px', height:'40px', borderRadius:'50%', overflow:'hidden', flexShrink:0, cursor:'pointer', background:'linear-gradient(135deg,#00e5ff,#00ff88)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                     {u.avatar_url ? <img src={u.avatar_url} style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <span style={{ fontWeight:'800', color:'#070a12', fontSize:'15px' }}>{(u.full_name||u.username||'E')[0].toUpperCase()}</span>}
                   </div>
-                  <div style={{ flex:1, minWidth:0 }} onClick={() => openUserDetail(u)} style={{ cursor:'pointer' }}>
+                  <div style={{ flex:1, minWidth:0, cursor:'pointer' }} onClick={() => openUserDetail(u)}>
                     <div style={{ fontSize:'13px', fontWeight:'700' }}>
                       {u.full_name || u.username}
                       {u.banned && <Tag color='#ff4560'>BANNED</Tag>}
