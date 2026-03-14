@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
-export async function POST(req: NextRequest) {
+export async function POST(req) {
   try {
     const { messages } = await req.json()
 
@@ -9,8 +9,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
     }
 
-    // Build conversation history for Gemini
-    const contents = messages.map((msg: { role: string; content: string }) => ({
+    const contents = messages.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     }))
@@ -24,12 +23,7 @@ export async function POST(req: NextRequest) {
           contents,
           systemInstruction: {
             parts: [{
-              text: `তুমি Echo World-এর AI Assistant। তোমার নাম "Echo AI"।
-Echo World একটি social investment platform যেখানে মানুষ invest করতে পারে এবং community-তে যুক্ত হতে পারে।
-তুমি বাংলা এবং English দুটো ভাষায় কথা বলতে পারো।
-User যে ভাষায় কথা বলবে তুমি সেই ভাষায় উত্তর দেবে।
-তুমি সবসময় helpful, friendly এবং informative।
-যেকোনো প্রশ্নের উত্তর দাও — general knowledge, math, code, creative writing সব।`
+              text: `তুমি Echo World-এর AI Assistant। তোমার নাম "Echo AI"। Echo World একটি social investment platform। তুমি বাংলা এবং English দুটো ভাষায় কথা বলতে পারো। User যে ভাষায় কথা বলবে তুমি সেই ভাষায় উত্তর দেবে। যেকোনো প্রশ্নের উত্তর দাও।`
             }]
           },
           generationConfig: {
@@ -46,8 +40,7 @@ User যে ভাষায় কথা বলবে তুমি সেই ভ
       return NextResponse.json({ error: data.error?.message || 'Gemini error' }, { status: 500 })
     }
 
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, no response.'
-
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'উত্তর পাওয়া যায়নি।'
     return NextResponse.json({ reply: text })
 
   } catch (error) {
