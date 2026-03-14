@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 export async function POST(req) {
   try {
     const { messages } = await req.json()
-    const apiKey = 'AIzaSyBmUIxDfBb6fRjP5NiHV6QSSWJaqxaZnJ0'
+    const apiKey = process.env.GEMINI_API_KEY
 
     const contents = messages.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
