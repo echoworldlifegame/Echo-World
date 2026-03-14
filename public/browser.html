@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#07070e">
+<link rel="manifest" href="/manifest.json">
+<title>Echo World Browser</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07070e;--s1:#0f0f1a;--s2:#161625;--s3:#1e1e30;--s4:#28283e;--brd:rgba(255,255,255,0.07);--b2:rgba(255,255,255,0.12);--a1:#8b5cf6;--a2:#f472b6;--a3:#34d399;--a4:#60a5fa;--tx:#eeeeff;--t2:#9090b0;--t3:#52526a;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'Plus Jakarta Sans',sans-serif;}
+button{cursor:pointer;font-family:inherit;border:none;background:transparent;}
+input{font-family:inherit;border:none;outline:none;}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+/* TOPBAR */
+#topbar{background:var(--s1);border-bottom:1px solid var(--brd);flex-shrink:0;}
+.brand-row{display:flex;align-items:center;padding:10px 14px 6px;gap:10px;}
+.brand-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;background:linear-gradient(120deg,var(--a1),var(--a2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.brand-spacer{flex:1;}
+.brand-menu{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--t2);}
+.addr-row{display:flex;align-items:center;padding:0 10px 10px;gap:8px;}
+.addr-nav{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t2);}
+.addr-nav:disabled{opacity:.25;}
+.addr-box{flex:1;display:flex;align-items:center;background:var(--s3);border:1.5px solid var(--brd);border-radius:12px;padding:0 12px;height:40px;gap:8px;transition:all .2s;}
+.addr-box:focus-within{border-color:var(--a1);box-shadow:0 0 0 3px rgba(139,92,246,.1);}
+.addr-lock{font-size:12px;color:var(--a3);}
+#omniInput{flex:1;background:transparent;color:var(--tx);font-size:14px;}
+#omniInput::placeholder{color:var(--t3);}
+.addr-go{width:30px;height:30px;border-radius:8px;background:var(--a1);color:white;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.tab-row{display:flex;align-items:center;padding:0 10px 8px;gap:6px;overflow-x:auto;scrollbar-width:none;}
+.tab-row::-webkit-scrollbar{display:none;}
+.tab-pill{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;background:var(--s2);border:1px solid var(--brd);font-size:12px;color:var(--t2);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.tab-pill.active{background:var(--s3);border-color:var(--a1);color:var(--tx);}
+.tab-x{width:14px;height:14px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t3);}
+.tab-add-pill{width:28px;height:28px;border-radius:20px;background:var(--s2);border:1px solid var(--brd);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--t3);flex-shrink:0;}
+/* LOADBAR */
+#loadbar{height:2px;background:var(--s3);display:none;flex-shrink:0;}
+#loadbar.on{display:block;}
+#loadfill{height:100%;width:0%;background:linear-gradient(90deg,var(--a1),var(--a2),var(--a3));transition:width .25s;border-radius:0 2px 2px 0;}
+/* CONTENT */
+#content{flex:1;display:flex;overflow:hidden;position:relative;}
+/* IFRAME */
+#webview{position:absolute;inset:0;width:100%;height:100%;border:none;background:#fff;display:none;}
+#webview.show{display:block;}
+/* NEWTAB */
+#newtab{position:absolute;inset:0;overflow-y:auto;padding:24px 16px 100px;background:var(--bg);}
+.nt-hero{text-align:center;margin-bottom:28px;}
+.nt-logo{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;background:linear-gradient(135deg,var(--a1),var(--a2),var(--a3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;}
+.nt-sub{color:var(--t2);font-size:13px;margin-bottom:24px;}
+.sg-wrap{position:relative;max-width:500px;margin:0 auto;}
+.nt-sbox{display:flex;background:var(--s2);border:1.5px solid var(--b2);border-radius:16px;padding:5px 5px 5px 16px;align-items:center;gap:8px;transition:all .2s;}
+.nt-sbox:focus-within{border-color:var(--a1);box-shadow:0 0 0 4px rgba(139,92,246,.1);}
+#heroSearchInput{flex:1;background:transparent;color:var(--tx);font-size:15px;}
+#heroSearchInput::placeholder{color:var(--t3);}
+.nt-sbtn{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--a1),var(--a2));color:white;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+#suggestDropdown{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--s2);border:1px solid var(--b2);border-radius:14px;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.6);display:none;z-index:999;}
+#suggestDropdown.show{display:block;}
+.sg-item{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;font-size:14px;color:var(--t2);border-bottom:1px solid var(--brd);}
+.sg-item:last-child{border-bottom:none;}
+.sg-item:active{background:var(--s3);}
+.echo-ad{background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(244,114,182,.1));border:1px solid rgba(139,92,246,.15);border-radius:14px;padding:14px;margin-bottom:20px;display:flex;gap:12px;align-items:center;}
+.echo-ad-icon{font-size:28px;flex-shrink:0;}
+.echo-ad-text{flex:1;}
+.echo-ad-title{font-size:13.5px;font-weight:600;color:var(--tx);margin-bottom:3px;}
+.echo-ad-sub{font-size:12px;color:var(--t2);}
+.echo-ad-btn{padding:8px 14px;border-radius:9px;background:var(--a1);color:white;font-size:12px;font-weight:600;flex-shrink:0;}
+.sec-lbl{font-family:'Syne',sans-serif;font-size:10.5px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;}
+.feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;}
+.feat-card{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--brd);border-radius:14px;padding:12px;cursor:pointer;transition:all .2s;}
+.feat-card:active{background:var(--s3);transform:scale(.97);}
+.feat-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.feat-name{font-size:13px;font-weight:600;color:var(--tx);}
+.feat-url{font-size:11px;color:var(--t3);}
+.speed-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:28px;}
+.sp{display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 6px;border-radius:14px;cursor:pointer;background:var(--s2);border:1px solid var(--brd);transition:all .2s;}
+.sp:active{background:var(--s3);transform:scale(.95);}
+.sp-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.sp-name{font-size:11px;color:var(--t2);text-align:center;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.stat{background:var(--s2);border:1px solid var(--brd);border-radius:12px;padding:14px;text-align:center;}
+.stat-n{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;background:linear-gradient(135deg,var(--a1),var(--a2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px;}
+.stat-l{font-size:10.5px;color:var(--t3);}
+/* RESULTS */
+#resultsPage{position:absolute;inset:0;overflow-y:auto;padding:20px 16px 100px;background:var(--bg);display:none;}
+#resultsPage.show{display:block;}
+.rp-q{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--tx);margin-bottom:4px;}
+.rp-cnt{font-size:12px;color:var(--t3);margin-bottom:16px;}
+.rp-tabs{display:flex;gap:6px;margin-bottom:18px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+.rt{padding:7px 14px;font-size:12.5px;color:var(--t2);border-radius:20px;border:1px solid var(--brd);background:var(--s2);white-space:nowrap;flex-shrink:0;cursor:pointer;}
+.rt.on{background:rgba(139,92,246,.15);border-color:var(--a1);color:var(--a1);}
+.qa-box{background:var(--s2);border:1px solid rgba(139,92,246,.2);border-radius:14px;padding:16px;margin-bottom:18px;display:none;}
+.qa-box.show{display:block;}
+.qa-lbl{font-size:10px;font-weight:700;color:var(--a1);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px;}
+.qa-title{font-size:15px;font-weight:600;color:var(--tx);margin-bottom:5px;}
+.qa-desc{font-size:13px;color:var(--t2);line-height:1.7;}
+.wr{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--brd);}
+.wr:last-child{border-bottom:none;}
+.wr-meta{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--t3);margin-bottom:4px;}
+.wr-fav{width:14px;height:14px;border-radius:3px;background:var(--s3);display:inline-flex;align-items:center;justify-content:center;font-size:9px;}
+.wr-title{font-size:16px;font-weight:600;color:var(--a4);display:block;margin-bottom:4px;line-height:1.3;cursor:pointer;text-decoration:none;}
+.wr-url{font-size:11px;color:var(--t3);margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wr-desc{font-size:13px;color:var(--t2);line-height:1.7;}
+.nc{display:flex;gap:12px;background:var(--s2);border:1px solid var(--brd);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer;}
+.nc:active{background:var(--s3);}
+.nc-ico{font-size:26px;flex-shrink:0;}
+.nc-title{font-size:13.5px;font-weight:600;color:var(--tx);margin-bottom:3px;line-height:1.4;}
+.nc-meta{font-size:11px;color:var(--t3);}
+.nc-desc{font-size:12px;color:var(--t2);margin-top:4px;line-height:1.6;}
+.img-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.img-tile{aspect-ratio:4/3;border-radius:10px;cursor:pointer;background:var(--s2);border:1px solid var(--brd);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;}
+.vc{display:flex;gap:12px;background:var(--s2);border:1px solid var(--brd);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer;}
+.vc-thumb{width:56px;height:42px;border-radius:8px;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+/* SPINNER */
+#spinner{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;background:var(--bg);}
+#spinner.show{display:flex;}
+.spin-ring{width:46px;height:46px;border-radius:50%;border:3px solid var(--s4);border-top-color:var(--a1);animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.spin-txt{font-size:13px;color:var(--t3);}
+/* BOTTOM NAV */
+#bottomnav{background:var(--s1);border-top:1px solid var(--brd);display:flex;align-items:center;padding:8px 16px;gap:4px;flex-shrink:0;}
+.bn-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:10px;font-size:20px;color:var(--t2);}
+.bn-btn:active{background:var(--s3);}
+.bn-lbl{font-size:9.5px;}
+/* DRAWER */
+#drawer{position:fixed;inset:0;z-index:999;display:none;}
+#drawer.show{display:flex;}
+.drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.6);}
+.drawer-panel{position:absolute;right:0;top:0;bottom:0;width:280px;background:var(--s1);border-left:1px solid var(--brd);display:flex;flex-direction:column;overflow-y:auto;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+#drawer.show .drawer-panel{transform:translateX(0);}
+.dp-head{padding:20px 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--brd);}
+.dp-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;background:linear-gradient(120deg,var(--a1),var(--a2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;flex:1;}
+.dp-close{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--t2);}
+.dp-sec{padding:12px 12px 4px;}
+.dp-lbl{padding:8px 8px 4px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;}
+.dp-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;cursor:pointer;font-size:14px;color:var(--t2);}
+.dp-item:active{background:var(--s2);color:var(--tx);}
+.dp-icon{font-size:16px;flex-shrink:0;}
+.dp-div{height:1px;background:var(--brd);margin:6px 12px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="brand-row">
+      <span class="brand-logo">⟡ Echo World</span>
+      <span class="brand-spacer"></span>
+      <button class="brand-menu" id="menuBtn">☰</button>
+    </div>
+    <div class="addr-row">
+      <button class="addr-nav" id="btnBack" disabled>←</button>
+      <button class="addr-nav" id="btnFwd" disabled>→</button>
+      <div class="addr-box">
+        <span class="addr-lock">🔒</span>
+        <input id="omniInput" placeholder="Search or enter URL..." inputmode="search">
+        <button class="addr-go" id="omniGo">→</button>
+      </div>
+      <button class="addr-nav" id="btnReload">↻</button>
+    </div>
+    <div class="tab-row" id="tabRow"></div>
+  </div>
+  <div id="loadbar"><div id="loadfill"></div></div>
+  <div id="content">
+    <div id="newtab">
+      <div class="nt-hero">
+        <div class="nt-logo">⟡ Echo World</div>
+        <div class="nt-sub">Browse freely. Stay in your world.</div>
+        <div class="sg-wrap">
+          <div class="nt-sbox">
+            <input id="heroSearchInput" placeholder="Search anything..." inputmode="search">
+            <button class="nt-sbtn" id="heroBtn">🔍</button>
+          </div>
+          <div id="suggestDropdown"></div>
+        </div>
+      </div>
+      <div class="echo-ad">
+        <div class="echo-ad-icon">💰</div>
+        <div class="echo-ad-text">
+          <div class="echo-ad-title">Earn with Echo World</div>
+          <div class="echo-ad-sub">15% monthly returns · 50,000+ members</div>
+        </div>
+        <button class="echo-ad-btn" id="investBtn">Invest</button>
+      </div>
+      <div class="sec-lbl">Featured</div>
+      <div class="feat-grid">
+        <div class="feat-card" data-url="https://echoworld.vip"><div class="feat-icon" style="background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(244,114,182,.15))">⟡</div><div><div class="feat-name">Echo World</div><div class="feat-url">echoworld.vip</div></div></div>
+        <div class="feat-card" data-url="https://youtube.com"><div class="feat-icon" style="background:rgba(255,0,0,.12)">▶</div><div><div class="feat-name">YouTube</div><div class="feat-url">youtube.com</div></div></div>
+        <div class="feat-card" data-url="https://facebook.com"><div class="feat-icon" style="background:rgba(24,119,242,.12)">📘</div><div><div class="feat-name">Facebook</div><div class="feat-url">facebook.com</div></div></div>
+        <div class="feat-card" data-url="https://google.com"><div class="feat-icon" style="background:rgba(66,133,244,.12)">🔍</div><div><div class="feat-name">Google</div><div class="feat-url">google.com</div></div></div>
+      </div>
+      <div class="sec-lbl">Quick Access</div>
+      <div class="speed-grid">
+        <div class="sp" data-url="https://instagram.com"><div class="sp-icon" style="background:rgba(225,48,108,.12)">📷</div><div class="sp-name">Instagram</div></div>
+        <div class="sp" data-url="https://twitter.com"><div class="sp-icon" style="background:rgba(29,161,242,.12)">𝕏</div><div class="sp-name">Twitter</div></div>
+        <div class="sp" data-url="https://tiktok.com"><div class="sp-icon" style="background:rgba(255,255,255,.06)">🎵</div><div class="sp-name">TikTok</div></div>
+        <div class="sp" data-url="https://amazon.com"><div class="sp-icon" style="background:rgba(255,153,0,.12)">🛒</div><div class="sp-name">Amazon</div></div>
+        <div class="sp" data-url="https://reddit.com"><div class="sp-icon" style="background:rgba(255,87,0,.12)">👽</div><div class="sp-name">Reddit</div></div>
+        <div class="sp" data-url="https://wikipedia.org"><div class="sp-icon" style="background:rgba(255,255,255,.06)">📖</div><div class="sp-name">Wikipedia</div></div>
+        <div class="sp" data-url="https://netflix.com"><div class="sp-icon" style="background:rgba(229,9,20,.12)">🎬</div><div class="sp-name">Netflix</div></div>
+        <div class="sp" data-url="https://prothomalo.com"><div class="sp-icon" style="background:rgba(0,150,57,.12)">🇧🇩</div><div class="sp-name">Prothom Alo</div></div>
+        <div class="sp" data-url="https://github.com"><div class="sp-icon" style="background:rgba(255,255,255,.06)">🐙</div><div class="sp-name">GitHub</div></div>
+        <div class="sp" data-url="https://linkedin.com"><div class="sp-icon" style="background:rgba(0,119,181,.12)">💼</div><div class="sp-name">LinkedIn</div></div>
+        <div class="sp" data-search="latest news today"><div class="sp-icon" style="background:rgba(52,211,153,.12)">🌍</div><div class="sp-name">News</div></div>
+        <div class="sp" data-url="https://bdnews24.com"><div class="sp-icon" style="background:rgba(0,150,57,.12)">📰</div><div class="sp-name">BD News24</div></div>
+      </div>
+      <div class="sec-lbl">Today's Stats</div>
+      <div class="stats-row">
+        <div class="stat"><div class="stat-n" id="stTabs">1</div><div class="stat-l">Tabs</div></div>
+        <div class="stat"><div class="stat-n" id="stSearches">0</div><div class="stat-l">Searches</div></div>
+        <div class="stat"><div class="stat-n" id="stTime">0m</div><div class="stat-l">Browsing</div></div>
+      </div>
+    </div>
+    <div id="resultsPage">
+      <div class="rp-q" id="rpQ"></div>
+      <div class="rp-cnt" id="rpCnt"></div>
+      <div class="rp-tabs">
+        <div class="rt on" data-t="all">🌐 All</div>
+        <div class="rt" data-t="news">📰 News</div>
+        <div class="rt" data-t="images">🖼 Images</div>
+        <div class="rt" data-t="videos">▶ Videos</div>
+      </div>
+      <div class="qa-box" id="qaBox">
+        <div class="qa-lbl">⭐ Quick Answer</div>
+        <div class="qa-title" id="qaTitle"></div>
+        <div class="qa-desc" id="qaDesc"></div>
+      </div>
+      <div id="resultsBody"></div>
+    </div>
+    <iframe id="webview" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+    <div id="spinner"><div class="spin-ring"></div><div class="spin-txt" id="spinTxt">Loading...</div></div>
+  </div>
+  <div id="bottomnav">
+    <button class="bn-btn" id="bnHome">🏠<span class="bn-lbl">Home</span></button>
+    <button class="bn-btn" id="bnBack">←<span class="bn-lbl">Back</span></button>
+    <button class="bn-btn" id="bnFwd">→<span class="bn-lbl">Forward</span></button>
+    <button class="bn-btn" id="bnNew">＋<span class="bn-lbl">New Tab</span></button>
+    <button class="bn-btn" id="bnMenu">☰<span class="bn-lbl">Menu</span></button>
+  </div>
+</div>
+<div id="drawer">
+  <div class="drawer-bg" id="drawerBg"></div>
+  <div class="drawer-panel">
+    <div class="dp-head"><span class="dp-logo">⟡ Echo World</span><button class="dp-close" id="drawerClose">✕</button></div>
+    <div class="dp-sec">
+      <div class="dp-item" id="dpHome"><span class="dp-icon">🏠</span> Home</div>
+      <div class="dp-item"><span class="dp-icon">📚</span> Bookmarks</div>
+      <div class="dp-item"><span class="dp-icon">🕐</span> History</div>
+    </div>
+    <div class="dp-div"></div>
+    <div class="dp-lbl">Echo World</div>
+    <div class="dp-sec">
+      <div class="dp-item" data-url="https://echoworld.vip"><span class="dp-icon">💰</span> Investments</div>
+      <div class="dp-item" data-url="https://echoworld.vip"><span class="dp-icon">👥</span> Community</div>
+      <div class="dp-item" data-url="https://echoworld.vip"><span class="dp-icon">🎁</span> Referrals</div>
+    </div>
+    <div class="dp-div"></div>
+    <div class="dp-lbl">Recent</div>
+    <div class="dp-sec" id="recentList"><div class="dp-item" style="color:var(--t3);font-size:13px"><span class="dp-icon">🕐</span> No history yet</div></div>
+  </div>
+</div>
+<script>
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+
+// Service Worker
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+
+// State
+var tabs=[], activeId=0, tabCtr=0;
+var hist=[], fwd=[];
+var curUrl='', curQ='';
+var searches=0, startT=Date.now();
+
+// Get all elements
+var omniInput = document.getElementById('omniInput');
+var heroSearchInput = document.getElementById('heroSearchInput');
+var suggestDropdown = document.getElementById('suggestDropdown');
+var webview = document.getElementById('webview');
+var loadbar = document.getElementById('loadbar');
+var loadfill = document.getElementById('loadfill');
+
+// Boot
+addNewTab();
+setInterval(function(){ document.getElementById('stTime').textContent=Math.floor((Date.now()-startT)/60000)+'m'; }, 30000);
+
+// Tabs
+function addNewTab(){
+  var id=tabCtr++;
+  tabs.push({id:id,title:'New Tab',icon:'🏠'});
+  activeId=id; renderTabs(); goHome();
+}
+function renderTabs(){
+  var row=document.getElementById('tabRow'); row.innerHTML='';
+  tabs.forEach(function(t){
+    var el=document.createElement('div');
+    el.className='tab-pill'+(t.id===activeId?' active':'');
+    el.innerHTML=t.icon+' <span style="max-width:80px;overflow:hidden;text-overflow:ellipsis">'+t.title+'</span> <span class="tab-x">×</span>';
+    el.querySelector('.tab-x').onclick=function(e){e.stopPropagation();closeTab(t.id);};
+    el.onclick=function(){activeId=t.id;renderTabs();};
+    row.appendChild(el);
+  });
+  var add=document.createElement('button');
+  add.className='tab-add-pill';add.textContent='+';add.onclick=addNewTab;
+  row.appendChild(add);
+  document.getElementById('stTabs').textContent=tabs.length;
+}
+function closeTab(id){
+  if(tabs.length===1){goHome();return;}
+  tabs=tabs.filter(function(t){return t.id!==id;});
+  if(activeId===id)activeId=tabs[tabs.length-1].id;
+  renderTabs();
+}
+function setTab(title,icon){
+  var t=tabs.find(function(t){return t.id===activeId;});
+  if(t){t.title=(title||'').substring(0,20);t.icon=icon||'🌐';renderTabs();}
+}
+
+// Navigate
+function handleOmni(v){
+  v=v.trim();if(!v)return;
+  if(isUrl(v))loadSite(v.startsWith('http')?v:'https://'+v);
+  else doSearch(v);
+}
+function isUrl(s){return /^https?:\/\//i.test(s)||s.startsWith('www.')||(/\.[a-z]{2,}(\/|$)/i.test(s)&&!s.includes(' '));}
+
+function heroSearch(){
+  var v=heroSearchInput.value.trim();if(!v)return;
+  omniInput.value=v;
+  if(isUrl(v))loadSite(v.startsWith('http')?v:'https://'+v);
+  else doSearch(v);
+}
+
+function loadSite(url){
+  curUrl=url;curQ='';omniInput.value=url;
+  setTab(getDom(url),'🌐');addRecent(getDom(url),'🌐');
+  hist.push({t:'url',url:url});fwd=[];updateNav();
+  showSpin('Loading '+getDom(url)+'...');startLoad();
+  webview.src='about:blank';
+  setTimeout(function(){
+    webview.src=url;
+    webview.onload=function(){
+      stopLoad();
+      showView('webview');
+      try{setTab(webview.contentDocument&&webview.contentDocument.title||getDom(url),'🌐');}catch(e){}
+    };
+    webview.onerror=function(){stopLoad();window.open(url,'_blank');goHome();};
+    setTimeout(function(){
+      if(loadbar.classList.contains('on')){stopLoad();showView('webview');}
+    },10000);
+  },100);
+}
+
+async function doSearch(q){
+  q=q.trim();if(!q)return;
+  curQ=q;curUrl='';omniInput.value=q;
+  searches++;document.getElementById('stSearches').textContent=searches;
+  setTab(q,'🔍');addRecent(q,'🔍');
+  hist.push({t:'search',q:q});fwd=[];updateNav();
+  showSpin('Searching "'+q+'"...');startLoad();
+  var data;
+  try{data=await fetchDDG(q);}catch(e){data=fallback(q);}
+  stopLoad();renderResults(q,data);
+}
+
+async function fetchDDG(q){
+  var r={web:[],news:[],featured:null};
+  try{
+    var res=await fetch('https://api.duckduckgo.com/?q='+encodeURIComponent(q)+'&format=json&no_redirect=1&no_html=1&skip_disambig=1');
+    var d=await res.json();
+    if(d.AbstractText)r.featured={title:d.Heading||q,desc:d.AbstractText};
+    (d.Results||[]).forEach(function(x){r.web.push({title:x.Text,desc:x.Text,url:x.FirstURL,domain:getDom(x.FirstURL)});});
+    (d.RelatedTopics||[]).slice(0,10).forEach(function(x){
+      if(x.Text&&x.FirstURL)r.web.push({title:x.Text.split(' - ')[0].substring(0,80),desc:x.Text,url:x.FirstURL,domain:getDom(x.FirstURL)});
+    });
+  }catch(e){}
+  if(r.web.length<5)r.web=r.web.concat(buildWeb(q)).slice(0,10);
+  r.news=buildNews(q);
+  return r;
+}
+
+function fallback(q){return{web:buildWeb(q),news:buildNews(q),featured:null};}
+
+function buildWeb(q){
+  var e=encodeURIComponent(q),m=mainSite(q.toLowerCase());
+  var rows=[
+    {title:q+' — Wikipedia',desc:'Free encyclopedia about '+q,url:'https://en.wikipedia.org/wiki/'+e,domain:'en.wikipedia.org'},
+    {title:q+' — Google Search',desc:'Find everything about "'+q+'" on Google.',url:'https://google.com/search?q='+e,domain:'google.com'},
+    {title:'What is '+q+'? Full Guide',desc:'Everything about '+q+' explained simply.',url:'https://google.com/search?q=what+is+'+e,domain:'google.com'},
+    {title:q+' — Latest News',desc:'Latest news and updates on '+q+'.',url:'https://news.google.com/search?q='+e,domain:'news.google.com'},
+    {title:q+' — YouTube Videos',desc:'Watch videos about '+q+' on YouTube.',url:'https://youtube.com/results?search_query='+e,domain:'youtube.com'},
+    {title:'Reddit — '+q,desc:'Real discussions about '+q+' on Reddit.',url:'https://reddit.com/search/?q='+e,domain:'reddit.com'},
+    {title:q+' — Bing',desc:'Search results for '+q+' on Bing.',url:'https://bing.com/search?q='+e,domain:'bing.com'},
+  ];
+  if(m)rows.splice(1,0,{title:q+' — Official Site',desc:'Official website for '+q+'.',url:'https://'+m,domain:m});
+  return rows.slice(0,9);
+}
+
+function mainSite(q){
+  var m={google:'google.com',youtube:'youtube.com',facebook:'facebook.com',instagram:'instagram.com',twitter:'twitter.com',amazon:'amazon.com',wikipedia:'wikipedia.org',reddit:'reddit.com',github:'github.com',netflix:'netflix.com',tiktok:'tiktok.com',linkedin:'linkedin.com',prothom:'prothomalo.com',bdnews:'bdnews24.com','echo world':'echoworld.vip',echoworld:'echoworld.vip'};
+  for(var k in m)if(q.includes(k))return m[k];
+  return null;
+}
+
+function buildNews(q){
+  var e=encodeURIComponent(q);
+  return[
+    {icon:'📰',title:'Breaking: '+q+' in global headlines',desc:'Full coverage and expert analysis.',src:'Google News',time:'1h ago',url:'https://news.google.com/search?q='+e},
+    {icon:'🌍',title:q+': What you need to know',desc:'Comprehensive coverage and latest updates.',src:'Reuters',time:'3h ago',url:'https://news.google.com/search?q='+e},
+    {icon:'🗞️',title:'New developments in '+q,desc:'Experts react to the latest changes.',src:'BBC News',time:'5h ago',url:'https://news.google.com/search?q='+e},
+    {icon:'📡',title:q+' — in-depth explainer',desc:'Everything you need to understand about '+q+'.',src:'AP News',time:'8h ago',url:'https://news.google.com/search?q='+e},
+    {icon:'💼',title:q+' — top stories this week',desc:'Roundup of the most important stories.',src:'The Guardian',time:'1d ago',url:'https://news.google.com/search?q='+e},
+  ];
+}
+
+function renderResults(q,data){
+  showView('resultsPage');
+  document.getElementById('rpQ').textContent='"'+q+'"';
+  document.getElementById('rpCnt').textContent=(data.web.length+data.news.length)+' results';
+  if(data.featured){document.getElementById('qaBox').classList.add('show');document.getElementById('qaTitle').textContent=data.featured.title;document.getElementById('qaDesc').textContent=data.featured.desc;}
+  else document.getElementById('qaBox').classList.remove('show');
+  renderRTab('all',data);
+  document.querySelectorAll('.rt').forEach(function(el){
+    el.onclick=function(){
+      document.querySelectorAll('.rt').forEach(function(x){x.classList.remove('on');});
+      el.classList.add('on');renderRTab(el.dataset.t,data);
+    };
+  });
+}
+
+function renderRTab(tab,data){
+  var c=document.getElementById('resultsBody');c.innerHTML='';
+  if(tab==='all'){
+    data.web.forEach(function(r){
+      var d=document.createElement('div');d.className='wr';
+      d.innerHTML='<div class="wr-meta"><span class="wr-fav">'+favi(r.domain)+'</span>'+esc(r.domain)+'</div><a class="wr-title" href="#">'+esc(r.title)+'</a><div class="wr-url">'+esc(r.url)+'</div><div class="wr-desc">'+esc(r.desc)+'</div>';
+      d.querySelector('.wr-title').onclick=function(e){e.preventDefault();loadSite(r.url);};
+      c.appendChild(d);
+    });
+  }else if(tab==='news'){
+    data.news.forEach(function(n){
+      var d=document.createElement('div');d.className='nc';
+      d.innerHTML='<div class="nc-ico">'+n.icon+'</div><div><div class="nc-title">'+esc(n.title)+'</div><div class="nc-meta">'+n.src+' · '+n.time+'</div><div class="nc-desc">'+esc(n.desc)+'</div></div>';
+      d.onclick=function(){loadSite(n.url);};c.appendChild(d);
+    });
+  }else if(tab==='images'){
+    c.innerHTML='<div style="font-size:12.5px;color:var(--t2);margin-bottom:12px">Images for "'+esc(curQ)+'"</div><div class="img-grid" id="ig"></div>';
+    var g=document.getElementById('ig');
+    var cols=['#1a1a2e','#1e1a2e','#1a1e2e','#1a2e1e','#2e1a1a','#2e2a1a','#1a2a2e','#2a1a2e'];
+    var emj=['🌅','🏙️','🎨','📸','🌿','✨','🎭','🌸'];
+    for(var i=0;i<8;i++){
+      var t=document.createElement('div');t.className='img-tile';t.style.background=cols[i];
+      t.innerHTML='<div style="font-size:28px">'+emj[i]+'</div><div style="font-size:11px;color:var(--t3)">'+esc(curQ)+'</div>';
+      (function(url){t.onclick=function(){loadSite(url);};}('https://www.google.com/search?q='+encodeURIComponent(curQ)+'&tbm=isch'));
+      g.appendChild(t);
+    }
+  }else if(tab==='videos'){
+    [curQ+' Full Video','Best of '+curQ+' 2025',curQ+' explained',curQ+' tutorial',curQ+' review'].forEach(function(v,i){
+      var d=document.createElement('div');d.className='vc';
+      d.innerHTML='<div class="vc-thumb">▶</div><div><div class="nc-title">'+esc(v)+'</div><div class="nc-meta">YouTube · '+['1.2M','340K','2.1M','89K','450K'][i]+' views</div></div>';
+      d.onclick=function(){loadSite('https://youtube.com/results?search_query='+encodeURIComponent(curQ));};
+      c.appendChild(d);
+    });
+  }
+}
+
+function showView(id){
+  document.getElementById('newtab').style.display='none';
+  document.getElementById('resultsPage').classList.remove('show');
+  document.getElementById('webview').classList.remove('show');
+  document.getElementById('spinner').classList.remove('show');
+  if(id==='newtab')document.getElementById('newtab').style.display='block';
+  else if(id==='resultsPage')document.getElementById('resultsPage').classList.add('show');
+  else if(id==='webview')document.getElementById('webview').classList.add('show');
+  else if(id==='spinner')document.getElementById('spinner').classList.add('show');
+}
+function showSpin(msg){showView('spinner');document.getElementById('spinTxt').textContent=msg;}
+function goHome(){
+  showView('newtab');heroSearchInput.value='';omniInput.value='';
+  curUrl='';curQ='';setTab('New Tab','🏠');
+}
+
+function addRecent(label,icon){
+  var list=document.getElementById('recentList');
+  var empty=list.querySelector('[style*="t3"]');if(empty)empty.remove();
+  var el=document.createElement('div');el.className='dp-item';el.style.fontSize='13px';
+  el.innerHTML='<span class="dp-icon">'+icon+'</span>'+label.substring(0,24);
+  el.onclick=function(){if(icon==='🔍')doSearch(label);else loadSite(curUrl);closeDrawer();};
+  list.insertBefore(el,list.firstChild);
+  while(list.children.length>6)list.removeChild(list.lastChild);
+}
+function goBack(){
+  if(hist.length<2)return;
+  fwd.push(hist.pop());var p=hist[hist.length-1];if(!p)return;
+  if(p.t==='search')doSearch(p.q);else loadSite(p.url);updateNav();
+}
+function goFwd(){
+  if(!fwd.length)return;var n=fwd.pop();
+  if(n.t==='search')doSearch(n.q);else loadSite(n.url);updateNav();
+}
+function updateNav(){
+  document.getElementById('btnBack').disabled=hist.length<2;
+  document.getElementById('btnFwd').disabled=fwd.length===0;
+}
+function openDrawer(){document.getElementById('drawer').classList.add('show');}
+function closeDrawer(){document.getElementById('drawer').classList.remove('show');}
+
+var lt;
+function startLoad(){
+  loadbar.classList.add('on');loadfill.style.width='0%';var p=0;
+  lt=setInterval(function(){p+=p<70?Math.random()*15:Math.random()*3;if(p>92)p=92;loadfill.style.width=p+'%';},200);
+}
+function stopLoad(){
+  clearInterval(lt);loadfill.style.width='100%';
+  setTimeout(function(){loadbar.classList.remove('on');loadfill.style.width='0%';},300);
+}
+
+// Suggestions
+var slist=['How to earn money online','Latest news today','YouTube music','Instagram login','Facebook marketplace','Amazon deals','Weather today','Cricket score live','Bangladesh news','Free movies','AI tools 2025','Learn programming','Echo World investment','Crypto prices','GitHub'];
+heroSearchInput.addEventListener('input',function(e){
+  var v=e.target.value.trim();
+  if(!v){suggestDropdown.classList.remove('show');return;}
+  var m=slist.filter(function(s){return s.toLowerCase().includes(v.toLowerCase());}).slice(0,3);
+  var ex=[v+' — Wikipedia',v+' news'].slice(0,Math.max(0,3-m.length));
+  var all=m.concat(ex).slice(0,4);
+  if(!all.length){suggestDropdown.classList.remove('show');return;}
+  suggestDropdown.innerHTML=all.map(function(s){return'<div class="sg-item">🔍 '+esc(s)+'</div>';}).join('');
+  suggestDropdown.querySelectorAll('.sg-item').forEach(function(el,i){
+    el.onclick=function(){heroSearchInput.value=all[i];suggestDropdown.classList.remove('show');heroSearch();};
+  });
+  suggestDropdown.classList.add('show');
+});
+document.addEventListener('click',function(e){if(!e.target.closest('.sg-wrap'))suggestDropdown.classList.remove('show');});
+
+// Helpers
+function getDom(url){try{return new URL(url).hostname.replace('www.','');}catch(e){return url;}}
+function favi(d){var m={'google.com':'🔍','youtube.com':'▶','wikipedia.org':'📖','reddit.com':'👽','github.com':'🐙','twitter.com':'𝕏','x.com':'𝕏','facebook.com':'📘','instagram.com':'📷','amazon.com':'🛒','news.google.com':'📰','linkedin.com':'💼','bing.com':'🔎','bdnews24.com':'📰','prothomalo.com':'📰','echoworld.vip':'⟡'};for(var k in m)if(d&&d.includes(k))return m[k];return'🌐';}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// Event listeners
+omniInput.addEventListener('keydown',function(e){if(e.key==='Enter'){omniInput.blur();handleOmni(omniInput.value);}});
+omniInput.addEventListener('focus',function(e){setTimeout(function(){e.target.select();},50);});
+document.getElementById('omniGo').onclick=function(){omniInput.blur();handleOmni(omniInput.value);};
+document.getElementById('btnBack').onclick=goBack;
+document.getElementById('btnFwd').onclick=goFwd;
+document.getElementById('btnReload').onclick=function(){if(curQ)doSearch(curQ);else if(curUrl){webview.src=curUrl;}};
+document.getElementById('menuBtn').onclick=openDrawer;
+document.getElementById('bnHome').onclick=goHome;
+document.getElementById('bnBack').onclick=goBack;
+document.getElementById('bnFwd').onclick=goFwd;
+document.getElementById('bnNew').onclick=addNewTab;
+document.getElementById('bnMenu').onclick=openDrawer;
+document.getElementById('drawerClose').onclick=closeDrawer;
+document.getElementById('drawerBg').onclick=closeDrawer;
+document.getElementById('dpHome').onclick=function(){goHome();closeDrawer();};
+document.getElementById('heroBtn').onclick=heroSearch;
+document.getElementById('investBtn').onclick=function(){loadSite('https://echoworld.vip');};
+heroSearchInput.addEventListener('keydown',function(e){if(e.key==='Enter'){heroSearchInput.blur();heroSearch();}});
+
+// Featured cards
+document.querySelectorAll('.feat-card[data-url]').forEach(function(el){
+  el.onclick=function(){loadSite(el.dataset.url);};
+});
+// Speed dial
+document.querySelectorAll('.sp[data-url]').forEach(function(el){
+  el.onclick=function(){loadSite(el.dataset.url);};
+});
+document.querySelectorAll('.sp[data-search]').forEach(function(el){
+  el.onclick=function(){doSearch(el.dataset.search);};
+});
+// Drawer items
+document.querySelectorAll('#drawer .dp-item[data-url]').forEach(function(el){
+  el.onclick=function(){loadSite(el.dataset.url);closeDrawer();};
+});
+
+}); // END DOMContentLoaded
+</script>
+</body>
+  </html>
