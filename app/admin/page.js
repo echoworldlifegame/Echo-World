@@ -8,6 +8,7 @@ const supabase = createClient(
 )
 
 const ADMIN_EMAIL = 'mdakibgoodboy4@gmail.com'
+const ADMIN_EMAIL = 'hamja01782@gmail.com'
 
 /* ─────────────────────────────────────────────
    sendSystemNotif — from_user_id: null
