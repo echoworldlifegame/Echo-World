@@ -1,3 +1,5 @@
+import OneSignalInit from './components/OneSignalInit'
+
 export const metadata = {
   title: 'Echo World',
   description: 'Location-based social media RPG',
@@ -30,7 +32,8 @@ export default function RootLayout({ children }) {
       </head>
       <body style={{margin:0,padding:0,background:'#070a10',fontFamily:'-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif'}}>
         {children}
+        <OneSignalInit />
       </body>
     </html>
   )
-    }
+}
