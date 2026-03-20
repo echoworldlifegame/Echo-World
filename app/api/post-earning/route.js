@@ -166,10 +166,25 @@ export async function POST(request) {
       }
     }
 
+    // ECHO Token — 10 ECHO per post
+    try {
+      const { data: echoAcc } = await supabase.from('echo_tokens').select('*').eq('user_id', userId).maybeSingle()
+      const newEcho = (parseFloat(echoAcc?.balance || 0) + 10)
+      const newEchoEarned = (parseFloat(echoAcc?.total_earned || 0) + 10)
+      await supabase.from('echo_tokens').upsert({
+        user_id: userId, balance: newEcho, total_earned: newEchoEarned
+      }, { onConflict: 'user_id' })
+      await supabase.from('echo_token_transactions').insert({
+        user_id: userId, amount: 10, type: 'daily_post', note: 'Daily post reward'
+      })
+      // profiles echo_balance update
+      await supabase.from('profiles').update({ echo_balance: newEcho }).eq('id', userId)
+    } catch(e) { console.log('ECHO earn error:', e) }
+
     return NextResponse.json({ success: true, earned: dailyTotal })
 
   } catch (e) {
     console.error('post-earning error:', e)
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
-  }
+}
