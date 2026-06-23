@@ -11,6 +11,8 @@ const supabase = createClient(
 const OFFER_END     = new Date('2027-06-30')
 const USDT_ADDRESS  = 'TEU8tVcEifGgTCxkpCXKw3SMfeoFNfAWkJ'
 const MIN_DEPOSIT   = 100
+const ECHO_PRICE    = 5.79  // 1 ECHO = $5.79 USDT
+const MIN_ECHO_USD  = 100   // minimum $100 worth ECHO
 const CLOUDINARY_CLOUD  = 'dbguxwpa8'
 const CLOUDINARY_PRESET = 'echoworld_preset'
 
@@ -541,7 +543,6 @@ function LockScreen({ children }) {
 export default function Invest() {
   const [user, setUser]           = useState(null)
   const [account, setAccount]     = useState(null)
-  const [echoBalance, setEchoBalance] = useState(0)
   const [investments, setInvestments] = useState([])
   const [earnings, setEarnings]   = useState([])
   const [withdrawals, setWithdrawals] = useState([])
@@ -613,6 +614,9 @@ export default function Invest() {
 
   // Wallet features
   const [walletTab, setWalletTab]       = useState('withdraw')
+  const [depositType, setDepositType]   = useState('usdt') // usdt | echo
+  const [echoDepositAmt, setEchoDepositAmt] = useState('')
+  const [echoSubmitting, setEchoSubmitting] = useState(false)
   const [showScanner, setShowScanner]   = useState(false)
   const [scannerStarted, setScannerStarted] = useState(false)
   const scannerRef = useRef(null)
@@ -758,10 +762,6 @@ export default function Invest() {
     const longPosts = (myPosts || []).filter(p => p.media_type === 'video' && (p.watch_time_minutes || 0) >= 60)
     const totalWatchMins = longPosts.reduce((s, p) => s + (p.watch_time_minutes || 0), 0)
     setLongWatchHrs(Math.floor(totalWatchMins / 60))
-
-    // ── ECHO Token balance ──
-    const { data: echoAcc } = await supabase.from('echo_tokens').select('balance').eq('user_id', uid).maybeSingle()
-    setEchoBalance(parseFloat(echoAcc?.balance || 0))
 
     // Load profile — username + referral_code
     const { data: profile } = await supabase.from('profiles').select('username, full_name, referral_code').eq('id', uid).single()
@@ -1061,6 +1061,57 @@ export default function Invest() {
   }
 
   // ── WITHDRAW ─────────────────────────────────────────────
+  const submitEchoDeposit = async () => {
+    const echoAmt = parseFloat(echoDepositAmt)
+    if (!echoAmt || isNaN(echoAmt)) { alert('Enter ECHO amount'); return }
+    const usdValue = echoAmt * ECHO_PRICE
+    if (usdValue < MIN_ECHO_USD) {
+      alert(`Minimum $${MIN_ECHO_USD} worth ECHO required (${(MIN_ECHO_USD/ECHO_PRICE).toFixed(4)} ECHO)`)
+      return
+    }
+    // Check user has enough ECHO
+    const { data: echoAcc } = await supabase.from('echo_tokens').select('balance').eq('user_id', user.id).maybeSingle()
+    const echoBal = parseFloat(echoAcc?.balance || 0)
+    if (echoAmt > echoBal) { alert(`Insufficient ECHO balance! You have ${echoBal.toFixed(4)} ECHO`); return }
+
+    setEchoSubmitting(true)
+    try {
+      // Deduct ECHO from wallet
+      await supabase.from('echo_tokens').update({
+        balance: parseFloat((echoBal - echoAmt).toFixed(6)),
+        total_spent: parseFloat(((parseFloat(echoAcc?.total_spent||0)) + echoAmt).toFixed(6))
+      }).eq('user_id', user.id)
+
+      // ECHO transaction record
+      await supabase.from('echo_token_transactions').insert({
+        user_id: user.id, amount: -echoAmt, type: 'invest_deposit',
+        note: `ECHO deposit — ${echoAmt} ECHO ($${usdValue.toFixed(2)} USD) for investment`
+      })
+
+      // Deposit request — dollar value fixed at time of deposit
+      await supabase.from('deposit_requests').insert({
+        user_id: user.id,
+        amount_usd: parseFloat(usdValue.toFixed(2)),
+        txid: `ECHO_DEPOSIT_${Date.now()}`,
+        screenshot_url: null,
+        status: 'pending',
+        note: `ECHO Token Deposit: ${echoAmt} ECHO @ $${ECHO_PRICE}/ECHO = $${usdValue.toFixed(2)} USD`
+      })
+
+      // Notification
+      await sendSystemNotif(user.id,
+        `ECHO deposit submitted! ${echoAmt} ECHO ($${usdValue.toFixed(2)}) pending admin approval. Daily rate: 2.5%`)
+
+      setEchoBalance(parseFloat((echoBal - echoAmt).toFixed(6)))
+      setEchoDepositAmt('')
+      alert(`✅ ECHO deposit submitted!\n${echoAmt} ECHO ($${usdValue.toFixed(2)}) pending approval.\nDaily rate: 2.5% on $${usdValue.toFixed(2)}`)
+      await loadAll(user.id)
+    } catch(e) {
+      alert('Error: ' + e.message)
+    }
+    setEchoSubmitting(false)
+  }
+
   const submitWithdraw = async () => {
     if (!isWdWindow) { alert('Withdrawal only on 14th & 28th!'); return }
     if (!usdtAddr.trim() || !withdrawAmount || submitting) return
@@ -1818,9 +1869,32 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
         {/* ══ DEPOSIT ══ */}
         {activeTab === 'deposit' && (
           <div style={{ animation:'fadeUp 0.3s ease' }}>
-            <div style={{ background:'rgba(255,165,0,0.06)', border:'1px solid rgba(255,165,0,0.2)', borderRadius:'12px', padding:'12px 14px', marginBottom:'14px', fontSize:'12px', color:'#ffa500', lineHeight:'1.6' }}>
-              ⚠️ Minimum <strong>$100 USDT</strong> · TRC20 only. Wrong network = permanent loss.
+            {/* Deposit Type Toggle */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:14 }}>
+              {[
+                { key:'usdt', label:'💵 USDT', desc:'TRC20', color:'#00e5ff' },
+                { key:'echo', label:'🪙 ECHO', desc:'2.5%/day', color:'#a855f7' },
+              ].map(t => (
+                <button key={t.key} onClick={() => setDepositType(t.key)}
+                  style={{ padding:'12px 8px', borderRadius:14, border:`2px solid ${depositType===t.key ? t.color : 'rgba(255,255,255,0.07)'}`, background: depositType===t.key ? `${t.color}12` : 'rgba(255,255,255,0.03)', cursor:'pointer', textAlign:'center' }}>
+                  <div style={{ fontSize:16, fontWeight:900, color: depositType===t.key ? t.color : '#4a5568' }}>{t.label}</div>
+                  <div style={{ fontSize:10, color:'#4a5568', marginTop:2 }}>{t.desc}</div>
+                </button>
+              ))}
             </div>
+
+            {depositType === 'usdt' && (
+              <div style={{ background:'rgba(255,165,0,0.06)', border:'1px solid rgba(255,165,0,0.2)', borderRadius:'12px', padding:'12px 14px', marginBottom:'14px', fontSize:'12px', color:'#ffa500', lineHeight:'1.6' }}>
+                ⚠️ Minimum <strong>$100 USDT</strong> · TRC20 only. Wrong network = permanent loss.
+              </div>
+            )}
+            {depositType === 'echo' && (
+              <div style={{ background:'rgba(168,85,247,0.06)', border:'1px solid rgba(168,85,247,0.2)', borderRadius:'12px', padding:'12px 14px', marginBottom:'14px', fontSize:'12px', color:'#a855f7', lineHeight:'1.6' }}>
+                🪙 Minimum <strong>$100 worth ECHO</strong> ({(100/ECHO_PRICE).toFixed(4)} ECHO) · 2.5% daily · 12-month holding
+              </div>
+            )}
+            {/* USDT Deposit Form */}
+            {depositType === 'usdt' && (
             <div style={{ background:'#111620', border:'1px solid rgba(255,255,255,0.07)', borderRadius:'20px', padding:'18px', marginBottom:'14px' }}>
               <div style={{ fontSize:'14px', fontWeight:'800', marginBottom:'14px' }}>📥 Deposit USDT (TRC20)</div>
               <div style={{ background:'linear-gradient(135deg,rgba(0,229,255,0.06),rgba(0,255,136,0.04))', border:'1px solid rgba(0,229,255,0.2)', borderRadius:'14px', padding:'14px', marginBottom:'14px' }}>
@@ -1892,6 +1966,78 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
                 {submitting ? '⏳ Submitting...' : '📥 Submit Deposit Request'}
               </button>
             </div>
+            )}
+
+            {/* ECHO Deposit Form */}
+            {depositType === 'echo' && (
+            <div style={{ background:'#111620', border:'1px solid rgba(168,85,247,0.2)', borderRadius:'20px', padding:'18px', marginBottom:'14px' }}>
+              <div style={{ fontSize:'14px', fontWeight:'800', marginBottom:'6px', color:'#a855f7' }}>🪙 Deposit ECHO Token</div>
+              <div style={{ fontSize:'11px', color:'#4a5568', marginBottom:'14px', lineHeight:1.7 }}>
+                ECHO দিয়ে invest করলে <strong style={{color:'#a855f7'}}>2.5% daily</strong> পাবে।
+                Income calculate হবে deposit এর <strong style={{color:'#00e5ff'}}>first dollar value</strong> তে।
+                Token এর দাম বাড়লে income বাড়বে না — কিন্তু token বেশি দামে sell করতে পারবে।
+              </div>
+
+              {/* ECHO Balance */}
+              <div style={{ background:'rgba(168,85,247,0.08)', border:'1px solid rgba(168,85,247,0.2)', borderRadius:12, padding:'12px 14px', marginBottom:14, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <div>
+                  <div style={{ fontSize:10, color:'#4a5568', fontWeight:700 }}>YOUR ECHO BALANCE</div>
+                  <div style={{ fontSize:18, fontWeight:900, color:'#a855f7' }}>{echoBalance.toFixed(4)} ECHO</div>
+                </div>
+                <div style={{ textAlign:'right' }}>
+                  <div style={{ fontSize:10, color:'#4a5568' }}>1 ECHO = $5.79</div>
+                  <div style={{ fontSize:12, color:'#00ff88', fontWeight:700 }}>${(echoBalance * ECHO_PRICE).toFixed(2)} USD</div>
+                </div>
+              </div>
+
+              {/* Amount input */}
+              <div style={{ marginBottom:12 }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                  <div style={{ fontSize:11, color:'#4a5568', fontWeight:700 }}>ECHO AMOUNT</div>
+                  <div style={{ fontSize:10, color:'#a855f7', cursor:'pointer' }}
+                    onClick={() => setEchoDepositAmt(echoBalance.toFixed(4))}>
+                    Max: {echoBalance.toFixed(4)} ECHO
+                  </div>
+                </div>
+                <input value={echoDepositAmt} onChange={e => setEchoDepositAmt(e.target.value)} type="number"
+                  placeholder={`Min ${(MIN_ECHO_USD/ECHO_PRICE).toFixed(4)} ECHO`}
+                  style={{ width:'100%', background:'#0c1018', border:'1px solid rgba(168,85,247,0.2)', borderRadius:12, padding:'12px', color:'#a855f7', fontSize:16, fontWeight:900, outline:'none' }} />
+                {echoDepositAmt && (
+                  <div style={{ marginTop:6, fontSize:11, color: parseFloat(echoDepositAmt)*ECHO_PRICE >= MIN_ECHO_USD ? '#00ff88' : '#ff4560' }}>
+                    {parseFloat(echoDepositAmt)*ECHO_PRICE >= MIN_ECHO_USD
+                      ? `✅ $${(parseFloat(echoDepositAmt)*ECHO_PRICE).toFixed(2)} USD — 2.5% daily = $${((parseFloat(echoDepositAmt)*ECHO_PRICE)*0.025).toFixed(4)}/day`
+                      : `⚠️ Minimum $${MIN_ECHO_USD} required (${(MIN_ECHO_USD/ECHO_PRICE).toFixed(4)} ECHO)`}
+                  </div>
+                )}
+              </div>
+
+              {/* Quick amounts */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, marginBottom:14 }}>
+                {[
+                  { echo: (100/ECHO_PRICE).toFixed(2), usd: '$100' },
+                  { echo: (500/ECHO_PRICE).toFixed(2), usd: '$500' },
+                  { echo: (1000/ECHO_PRICE).toFixed(2), usd: '$1000' },
+                ].map((q, i) => (
+                  <button key={i} onClick={() => setEchoDepositAmt(q.echo)}
+                    style={{ padding:'8px 4px', background:'rgba(168,85,247,0.06)', border:'1px solid rgba(168,85,247,0.15)', borderRadius:10, cursor:'pointer', textAlign:'center' }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'#a855f7' }}>{q.usd}</div>
+                    <div style={{ fontSize:9, color:'#4a5568' }}>{q.echo} ECHO</div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Info box */}
+              <div style={{ background:'rgba(255,165,0,0.05)', border:'1px solid rgba(255,165,0,0.15)', borderRadius:12, padding:'10px 12px', marginBottom:14, fontSize:11, color:'#8892a4', lineHeight:1.8 }}>
+                ℹ️ After 365 days, your ECHO tokens will be returned to your wallet.
+                USDT conversion available after exchange listing.
+              </div>
+
+              <button onClick={submitEchoDeposit} disabled={echoSubmitting || !echoDepositAmt || parseFloat(echoDepositAmt)*ECHO_PRICE < MIN_ECHO_USD}
+                style={{ width:'100%', padding:14, background: (echoDepositAmt && parseFloat(echoDepositAmt)*ECHO_PRICE >= MIN_ECHO_USD) ? 'linear-gradient(135deg,#a855f7,#7c3aed)' : 'rgba(255,255,255,0.05)', border:'none', borderRadius:14, color:(echoDepositAmt && parseFloat(echoDepositAmt)*ECHO_PRICE >= MIN_ECHO_USD) ? '#fff' : '#4a5568', fontSize:14, fontWeight:900, cursor:(echoDepositAmt && parseFloat(echoDepositAmt)*ECHO_PRICE >= MIN_ECHO_USD)?'pointer':'default' }}>
+                {echoSubmitting ? '⏳ Processing...' : '🪙 Deposit ECHO Token'}
+              </button>
+            </div>
+            )}
             {deposits.map(d => (
               <div key={d.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#111620', border:'1px solid rgba(255,255,255,0.05)', borderRadius:'12px', padding:'12px', marginBottom:'7px' }}>
                 <div>
@@ -1916,19 +2062,7 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
               <div style={{ position:'absolute', top:'-30px', right:'-30px', width:'120px', height:'120px', background:'radial-gradient(circle,rgba(0,229,255,0.1),transparent 60%)', borderRadius:'50%' }} />
               <div style={{ fontSize:'10px', color:'#4a5568', fontWeight:'700', letterSpacing:'2px', marginBottom:'6px' }}>ECHO WALLET</div>
               <div style={{ fontSize:'36px', fontWeight:'900', color:'#00ff88', marginBottom:'4px' }}>${(account?.wallet_balance||0).toFixed(2)}</div>
-              <div style={{ fontSize:'11px', color:'#4a5568', marginBottom:'8px' }}>Available Balance</div>
-              {/* ECHO Token balance */}
-              <div onClick={()=>window.location.href='/echo-wallet'}
-                style={{ background:'rgba(168,85,247,.08)', border:'1px solid rgba(168,85,247,.2)', borderRadius:10, padding:'8px 12px', marginBottom:'10px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:18 }}>🪙</span>
-                  <div>
-                    <div style={{ fontSize:14, fontWeight:900, color:'#a855f7' }}>{echoBalance.toLocaleString()} ECHO</div>
-                    <div style={{ fontSize:9, color:'#4a5568' }}>≈ ${(echoBalance * 0.001).toFixed(4)} USD</div>
-                  </div>
-                </div>
-                <div style={{ fontSize:11, color:'#a855f7', fontWeight:700 }}>Wallet →</div>
-              </div>
+              <div style={{ fontSize:'11px', color:'#4a5568', marginBottom:'16px' }}>Available Balance</div>
               {/* Wallet Address */}
               <div style={{ background:'rgba(0,0,0,0.3)', borderRadius:'12px', padding:'10px 14px', marginBottom:'12px' }}>
                 <div style={{ fontSize:'9px', color:'#4a5568', fontWeight:'700', marginBottom:'4px', letterSpacing:'1px' }}>YOUR WALLET ADDRESS</div>
@@ -2781,87 +2915,7 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
                     <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
                       <button onClick={()=>setMonetizeView('home')} style={{ background:'rgba(255,255,255,0.06)', border:'none', borderRadius:10, padding:'8px 12px', color:'#eef2f7', fontSize:13, cursor:'pointer' }}>← {lang==='bn'?'ফিরে যাও':lang==='hi'?'वापस':'Back'}</button>
                       <div style={{ fontSize:15, fontWeight:800, color:'#ff4560' }}>🎬 {tm('videoIncome',lang)}</div>
-                    </div>
-
-                    {/* Stats */}
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:14 }}>
-                      {[
-                        { label: tm('views',lang),    value: shortViews.toLocaleString(),    color:'#00e5ff' },
-                        { label: tm('watchTime',lang), value: longWatchHrs+'h',              color:'#ffa500' },
-                        { label: tm('income',lang),    value: '$'+userPosts.filter(p=>p.media_type==='video').reduce((s,p)=>s+(p.income_earned||0),0).toFixed(2), color:'#00ff88' },
-                      ].map((s,i) => (
-                        <div key={i} style={{ background:'#111620', border:`1px solid ${s.color}18`, borderRadius:12, padding:'10px 8px', textAlign:'center' }}>
-                          <div style={{ fontSize:15, fontWeight:900, color:s.color }}>{s.value}</div>
-                          <div style={{ fontSize:9, color:'#4a5568', marginTop:2 }}>{s.label}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Video list */}
-                    {userPosts.filter(p => p.media_type === 'video').length === 0 ? (
-                      <div style={{ textAlign:'center', padding:40, color:'#4a5568' }}>
-                        <div style={{ fontSize:40, marginBottom:8 }}>🎬</div>
-                        <div style={{ fontSize:13 }}>{lang==='bn'?'এখনো কোনো video নেই':lang==='hi'?'अभी कोई वीडियो नहीं':'No videos yet'}</div>
-                      </div>
-                    ) : userPosts.filter(p => p.media_type === 'video').map((post, i) => (
-                      <div key={i} onClick={() => { setSelectedVideo(post); setMonetizeView('videoDetail') }}
-                        style={{ background:'#111620', border:'1px solid rgba(255,255,255,0.07)', borderRadius:14, padding:'12px', marginBottom:8, cursor:'pointer', display:'flex', gap:12, alignItems:'center' }}>
-                        <div style={{ width:56, height:56, borderRadius:10, background:'#0c1018', overflow:'hidden', flexShrink:0, position:'relative' }}>
-                          {post.media_url && <video src={post.media_url} style={{ width:'100%', height:'100%', objectFit:'cover' }} muted preload="metadata"/>}
-                          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.3)', fontSize:18 }}>▶</div>
-                        </div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:12, fontWeight:700, color:'#eef2f7', marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                            {post.content || (lang==='bn'?'শিরোনাম নেই':lang==='hi'?'शीर्षक नहीं':'No title')}
-                          </div>
-                          <div style={{ display:'flex', gap:10 }}>
-                            <span style={{ fontSize:10, color:'#4a5568' }}>👁 {(post.view_count||0).toLocaleString()}</span>
-                            <span style={{ fontSize:10, color:'#4a5568' }}>⏱ {(post.watch_time_minutes||0)}m</span>
-                            <span style={{ fontSize:10, color:'#00ff88', fontWeight:700 }}>${(post.income_earned||0).toFixed(2)}</span>
-                          </div>
-                        </div>
-                        <div style={{ fontSize:16, color:'#4a5568' }}>›</div>
-                      </div>
-                    ))}
-
-                    {/* Tips */}
-                    <div style={{ background:'rgba(255,165,0,0.05)', border:'1px solid rgba(255,165,0,0.2)', borderRadius:14, padding:'14px', marginTop:8 }}>
-                      <div style={{ fontSize:12, fontWeight:800, color:'#ffa500', marginBottom:8 }}>💡 {tm('tips',lang)}</div>
-                      {(lang==='bn' ? [
-                        '📱 ভার্টিকাল ভিডিও বেশি মানুষের সামনে যায়',
-                        '⏱ ৩০-৬০ সেকেন্ডের ভিডিও সবচেয়ে বেশি watch হয়',
-                        '#️⃣ ৩-৫টা relevant hashtag ব্যবহার করো',
-                        '🕐 সকাল ৮টা বা রাত ৮টায় post করলে বেশি reach হয়',
-                        '❤️ অন্যদের video তে comment করলে তোমার reach বাড়ে',
-                        '🔄 প্রতিদিন post করলে algorithm তোমাকে বেশি দেখায়',
-                      ] : lang==='hi' ? [
-                        '📱 Vertical video ज्यादा लोगों तक पहुंचती है',
-                        '⏱ 30-60 सेकंड के वीडियो सबसे ज्यादा देखे जाते हैं',
-                        '#️⃣ 3-5 relevant hashtag इस्तेमाल करें',
-                        '🕐 सुबह 8 बजे या रात 8 बजे post करें',
-                        '❤️ दूसरों के video पर comment करने से reach बढ़ती है',
-                        '🔄 रोज post करने से algorithm आपको ज्यादा दिखाता है',
-                      ] : [
-                        '📱 Vertical videos reach more people',
-                        '⏱ 30-60 second videos get most watch time',
-                        '#️⃣ Use 3-5 relevant hashtags',
-                        '🕐 Post at 8 AM or 8 PM for maximum reach',
-                        '❤️ Commenting on others videos boosts your reach',
-                        '🔄 Daily posting makes algorithm show you more',
-                      ]).map((tip, i) => (
-                        <div key={i} style={{ fontSize:11, color:'#8892a4', padding:'4px 0', borderBottom: i < 5 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>{tip}</div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── VIDEO DETAIL VIEW ── */}
-                {monetizeView === 'videoDetail' && selectedVideo && (
-                  <div>
-                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
-                      <button onClick={()=>setMonetizeView('videos')} style={{ background:'rgba(255,255,255,0.06)', border:'none', borderRadius:10, padding:'8px 12px', color:'#eef2f7', fontSize:13, cursor:'pointer' }}>←</button>
-                      <div style={{ fontSize:14, fontWeight:800, color:'#eef2f7' }}>{tm('analytics',lang)}</div>
-                    </div>
+             </div>
 
                     {/* Video preview */}
                     <div style={{ background:'#0c1018', borderRadius:14, overflow:'hidden', marginBottom:14, aspectRatio:'9/16', maxHeight:280, position:'relative' }}>
@@ -3239,4 +3293,3 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
       </div>
     </div>
   )
-    }
