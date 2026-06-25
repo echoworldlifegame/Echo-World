@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
+import MiningWidget from '../components/MiningWidget'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -172,7 +173,7 @@ function useWithdrawalTimer() {
 /* ─────────────────────────────────────────────────────────
    CERTIFICATE COMPONENT
 ───────────────────────────────────────────────────────── */
-function Certificate({ inv, username, referralLink, onClose }) {
+function Certificate({ inv, username, referralLink, onClose, nidFrontUrl }) {
   const plan = getPlan(inv.amount_usd)
   const certRef = useRef(null)
   const daysIn = Math.floor((Date.now() - new Date(inv.start_date)) / 86400000)
@@ -240,8 +241,20 @@ function Certificate({ inv, username, referralLink, onClose }) {
           <div style={{ fontSize:'22px', fontWeight:'900', color:'#eef2f7', marginBottom:'2px' }}>{plan?.label} Plan</div>
           <div style={{ fontSize:'13px', color:'#4a5568', marginBottom:'20px' }}>This certifies that</div>
 
+          {/* NID Face Photo or Avatar */}
+          {nidFrontUrl ? (
+            <div style={{ width:60, height:60, borderRadius:'50%', overflow:'hidden', margin:'0 auto 10px', border:`3px solid ${plan?.color}`, position:'relative' }}>
+              <img src={nidFrontUrl} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+            </div>
+          ) : null}
           <div style={{ fontSize:'18px', fontWeight:'800', color: plan?.color, marginBottom:'16px', background:`${plan?.color}12`, borderRadius:'10px', padding:'8px 16px', display:'inline-block' }}>
             @{username}
+          </div>
+          {/* Official Seal */}
+          <div style={{ position:'absolute', bottom:60, right:16, width:60, height:60, borderRadius:'50%', background:'rgba(0,229,255,0.08)', border:'2px solid rgba(0,229,255,0.3)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', opacity:0.8 }}>
+            <div style={{ fontSize:18 }}>🌐</div>
+            <div style={{ fontSize:6, color:'#00e5ff', fontWeight:700, textAlign:'center', lineHeight:1.2 }}>ECHO{"
+"}OFFICIAL</div>
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'20px' }}>
@@ -615,6 +628,10 @@ export default function Invest() {
   // Wallet features
   const [walletTab, setWalletTab]       = useState('withdraw')
   const [depositType, setDepositType]   = useState('usdt') // usdt | echo
+  const [adminBanners,    setAdminBanners]   = useState([])
+  const [adminBannerIdx,  setAdminBannerIdx] = useState(0)
+  const [showNIDPopup,    setShowNIDPopup]   = useState(false)
+  const [nidChecked,      setNidChecked]     = useState(false)
   const [echoDepositAmt, setEchoDepositAmt] = useState('')
   const [echoSubmitting, setEchoSubmitting] = useState(false)
   const [showScanner, setShowScanner]   = useState(false)
@@ -822,6 +839,11 @@ export default function Invest() {
 
     // Award badges
     await awardBadges(uid, inv || [], acc, refUsers?.length || 0)
+
+    // ── Admin Banners ──
+    const { data: banners } = await supabase.from('admin_banners')
+      .select('*').eq('active', true).order('sort_order', { ascending: true })
+    setAdminBanners(banners || [])
   }
 
   const checkMilestones = async (uid, totalInvested) => {
@@ -1317,6 +1339,23 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
     alert('✅ Salary application submitted!')
   }
 
+  // NID reminder — every time user enters invest page
+  useEffect(() => {
+    if (authStep === 'app' && !nidChecked) {
+      setNidChecked(true)
+      if (nidStatus !== 'approved') {
+        setTimeout(() => setShowNIDPopup(true), 1000)
+      }
+    }
+  }, [authStep, nidChecked, nidStatus])
+
+  // Admin banner auto-slide
+  useEffect(() => {
+    if (!adminBanners.length) return
+    const iv = setInterval(() => setAdminBannerIdx(i => (i+1) % adminBanners.length), 4000)
+    return () => clearInterval(iv)
+  }, [adminBanners])
+
   const refLink = typeof window !== 'undefined'
     ? `${window.location.origin}/invest?ref=${referralCode || user?.id}`
     : ''
@@ -1477,6 +1516,31 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
         *{box-sizing:border-box}::-webkit-scrollbar{display:none}
       `}</style>
 
+      {/* ── NID Verification Popup (Feature 4 & 5) ── */}
+      {showNIDPopup && authStep === 'app' && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'#111620', border:'1px solid rgba(0,229,255,0.2)', borderRadius:20, padding:24, maxWidth:320, width:'100%', textAlign:'center' }}>
+            <div style={{ fontSize:48, marginBottom:10 }}>🪪</div>
+            <div style={{ fontSize:17, fontWeight:900, color:'#eef2f7', marginBottom:6 }}>NID Verification Required</div>
+            <div style={{ fontSize:12, color:'#8892a4', lineHeight:1.8, marginBottom:20 }}>
+              {nidStatus === 'pending'
+                ? '⏳ Your NID is under review. Admin will verify within 24 hours.'
+                : 'Verify your National ID to unlock full features including certificate photo, payouts, and monetization.'}
+            </div>
+            {nidStatus !== 'pending' && (
+              <button onClick={() => { setShowNIDPopup(false); setActiveTab('monetize'); setMonetizeView('nid') }}
+                style={{ width:'100%', padding:13, background:'linear-gradient(135deg,#00e5ff,#00ff88)', border:'none', borderRadius:14, color:'#050810', fontSize:14, fontWeight:900, cursor:'pointer', marginBottom:8 }}>
+                🪪 Verify Now
+              </button>
+            )}
+            <button onClick={() => setShowNIDPopup(false)}
+              style={{ width:'100%', padding:11, background:'transparent', border:'1px solid rgba(255,255,255,0.1)', borderRadius:12, color:'#4a5568', fontSize:13, cursor:'pointer' }}>
+              {nidStatus === 'pending' ? 'OK' : 'Later — Verify from Settings'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Milestone popup ── */}
       {milestone && (
         <div style={{ position:'fixed', top:'80px', left:'50%', transform:'translateX(-50%)', zIndex:500, background:'linear-gradient(135deg,#0a1628,#001a2e)', border:'2px solid rgba(255,202,40,0.4)', borderRadius:'20px', padding:'18px 24px', textAlign:'center', animation:'milestoneIn 0.5s ease', boxShadow:'0 8px 40px rgba(255,202,40,0.2)', minWidth:'260px' }}>
@@ -1487,7 +1551,7 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
       )}
 
       {/* Overlays */}
-      {certInv && <Certificate inv={certInv} username={username || user?.email?.split('@')[0]} referralLink={refLink} onClose={() => setCertInv(null)} />}
+      {certInv && <Certificate inv={certInv} username={username || user?.email?.split('@')[0]} referralLink={refLink} onClose={() => setCertInv(null)} nidFrontUrl={nidStatus==='approved' ? account?.nid_front_url : null} />}
       {showShareCard && <ShareCard account={account} investments={investments} username={username || user?.email?.split('@')[0]} referralLink={refLink} onClose={() => setShowShareCard(false)} />}
       {showTree && <ReferralTree userId={user?.id} onClose={() => setShowTree(false)} />}
 
@@ -1558,6 +1622,32 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
           </div>
         </div>
 
+        {/* ── Admin Banners ── */}
+        {activeTab === 'dashboard' && adminBanners.length > 0 && (
+          <div style={{ marginBottom:12, borderRadius:16, overflow:'hidden', position:'relative' }}>
+            {adminBanners.map((banner, i) => (
+              <div key={banner.id} style={{ display: i === adminBannerIdx ? 'block' : 'none' }}
+                onClick={() => banner.link_url && (window.location.href = banner.link_url)}>
+                <img src={banner.image_url} alt={banner.title||'Banner'}
+                  style={{ width:'100%', borderRadius:16, objectFit:'cover', maxHeight:160, cursor: banner.link_url ? 'pointer' : 'default' }} />
+                {banner.title && (
+                  <div style={{ position:'absolute', bottom:10, left:12, right:12, background:'rgba(0,0,0,0.6)', borderRadius:8, padding:'4px 10px', fontSize:12, fontWeight:700, color:'#fff' }}>
+                    {banner.title}
+                  </div>
+                )}
+              </div>
+            ))}
+            {adminBanners.length > 1 && (
+              <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:8 }}>
+                {adminBanners.map((_, i) => (
+                  <div key={i} onClick={() => setAdminBannerIdx(i)}
+                    style={{ width: i===adminBannerIdx ? 20 : 6, height:6, borderRadius:3, background: i===adminBannerIdx ? '#00e5ff' : 'rgba(255,255,255,0.2)', transition:'all 0.3s', cursor:'pointer' }} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── Marketing Carousel ── */}
         {activeTab === 'dashboard' && authStep === 'app' && (
           <div style={{ marginBottom:'12px', position:'relative', overflow:'hidden', borderRadius:'16px' }}>
@@ -1627,7 +1717,7 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
                 <div style={{ padding:'14px 16px' }}>
                   {[{n:'1',t:'সাইন আপ করুন'},{n:'2',t:'$100 USDT জমা দিন'},{n:'3',t:'প্রতিদিন পোস্ট করুন'},{n:'4',t:'১৪ ও ২৮ তারিখ withdraw করুন'}].map(s=>(
                     <div key={s.n} style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'8px' }}>
-                      <div style={{ width:'22px', height:'22px', borderRadius:'50%', background:'rgba(0,229,255,0.1)', border:'1px solid rgba(0,229,255,0.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', fontWeight:'700', color:'#00e5ff', flexShrink:0 }}>{s.n}</div>
+                     <div style={{ width:'22px', height:'22px', borderRadius:'50%', background:'rgba(0,229,255,0.1)', border:'1px solid rgba(0,229,255,0.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', fontWeight:'700', color:'#00e5ff', flexShrink:0 }}>{s.n}</div>
                       <div style={{ fontSize:'12px', color:'#8892a4' }}>{s.t}</div>
                     </div>
                   ))}
@@ -2105,6 +2195,13 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
                   <div style={{ fontSize:'11px', color:'#ffa500', marginBottom:'14px' }}>⚠️ এটি Echo World Internal Address — শুধু platform এর মধ্যে transfer এর জন্য</div>
                   <button onClick={() => setShowQR(false)} style={{ width:'100%', padding:'12px', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:'12px', color:'#8892a4', fontSize:'13px', fontWeight:'700', cursor:'pointer' }}>✕ Close</button>
                 </div>
+              </div>
+            )}
+
+            {/* ── Mining Widget ── */}
+            {user && (
+              <div style={{ marginBottom:14 }}>
+                <MiningWidget userId={user.id} lang={lang} onEarned={() => loadAll(user.id)} />
               </div>
             )}
 
@@ -2882,7 +2979,7 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
                     ].map((card, i) => (
                       <div key={i} onClick={() => setMonetizeView(card.key)}
                         style={{ background:'#111620', border:`1px solid ${card.color}22`, borderRadius:16, padding:'16px', marginBottom:10, cursor:'pointer', display:'flex', alignItems:'center', gap:14 }}>
-                        <div style={{ width:52, height:52, borderRadius:14, background:`${card.color}12`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, flexShrink:0 }}>{card.icon}</div>
+                                  <div style={{ width:52, height:52, borderRadius:14, background:`${card.color}12`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, flexShrink:0 }}>{card.icon}</div>
                         <div style={{ flex:1 }}>
                           <div style={{ fontSize:14, fontWeight:800, color:'#eef2f7', marginBottom:3 }}>{card.title}</div>
                           <div style={{ fontSize:20, fontWeight:900, color:card.color }}>${card.earn.toFixed(2)}</div>
@@ -2915,7 +3012,87 @@ $${amt.toFixed(2)} → @${transferUser.profiles?.username}
                     <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
                       <button onClick={()=>setMonetizeView('home')} style={{ background:'rgba(255,255,255,0.06)', border:'none', borderRadius:10, padding:'8px 12px', color:'#eef2f7', fontSize:13, cursor:'pointer' }}>← {lang==='bn'?'ফিরে যাও':lang==='hi'?'वापस':'Back'}</button>
                       <div style={{ fontSize:15, fontWeight:800, color:'#ff4560' }}>🎬 {tm('videoIncome',lang)}</div>
-             </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:14 }}>
+                      {[
+                        { label: tm('views',lang),    value: shortViews.toLocaleString(),    color:'#00e5ff' },
+                        { label: tm('watchTime',lang), value: longWatchHrs+'h',              color:'#ffa500' },
+                        { label: tm('income',lang),    value: '$'+userPosts.filter(p=>p.media_type==='video').reduce((s,p)=>s+(p.income_earned||0),0).toFixed(2), color:'#00ff88' },
+                      ].map((s,i) => (
+                        <div key={i} style={{ background:'#111620', border:`1px solid ${s.color}18`, borderRadius:12, padding:'10px 8px', textAlign:'center' }}>
+                          <div style={{ fontSize:15, fontWeight:900, color:s.color }}>{s.value}</div>
+                          <div style={{ fontSize:9, color:'#4a5568', marginTop:2 }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Video list */}
+                    {userPosts.filter(p => p.media_type === 'video').length === 0 ? (
+                      <div style={{ textAlign:'center', padding:40, color:'#4a5568' }}>
+                        <div style={{ fontSize:40, marginBottom:8 }}>🎬</div>
+                        <div style={{ fontSize:13 }}>{lang==='bn'?'এখনো কোনো video নেই':lang==='hi'?'अभी कोई वीडियो नहीं':'No videos yet'}</div>
+                      </div>
+                    ) : userPosts.filter(p => p.media_type === 'video').map((post, i) => (
+                      <div key={i} onClick={() => { setSelectedVideo(post); setMonetizeView('videoDetail') }}
+                        style={{ background:'#111620', border:'1px solid rgba(255,255,255,0.07)', borderRadius:14, padding:'12px', marginBottom:8, cursor:'pointer', display:'flex', gap:12, alignItems:'center' }}>
+                        <div style={{ width:56, height:56, borderRadius:10, background:'#0c1018', overflow:'hidden', flexShrink:0, position:'relative' }}>
+                          {post.media_url && <video src={post.media_url} style={{ width:'100%', height:'100%', objectFit:'cover' }} muted preload="metadata"/>}
+                          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.3)', fontSize:18 }}>▶</div>
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:'#eef2f7', marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                            {post.content || (lang==='bn'?'শিরোনাম নেই':lang==='hi'?'शीर्षक नहीं':'No title')}
+                          </div>
+                          <div style={{ display:'flex', gap:10 }}>
+                            <span style={{ fontSize:10, color:'#4a5568' }}>👁 {(post.view_count||0).toLocaleString()}</span>
+                            <span style={{ fontSize:10, color:'#4a5568' }}>⏱ {(post.watch_time_minutes||0)}m</span>
+                            <span style={{ fontSize:10, color:'#00ff88', fontWeight:700 }}>${(post.income_earned||0).toFixed(2)}</span>
+                          </div>
+                        </div>
+                        <div style={{ fontSize:16, color:'#4a5568' }}>›</div>
+                      </div>
+                    ))}
+
+                    {/* Tips */}
+                    <div style={{ background:'rgba(255,165,0,0.05)', border:'1px solid rgba(255,165,0,0.2)', borderRadius:14, padding:'14px', marginTop:8 }}>
+                      <div style={{ fontSize:12, fontWeight:800, color:'#ffa500', marginBottom:8 }}>💡 {tm('tips',lang)}</div>
+                      {(lang==='bn' ? [
+                        '📱 ভার্টিকাল ভিডিও বেশি মানুষের সামনে যায়',
+                        '⏱ ৩০-৬০ সেকেন্ডের ভিডিও সবচেয়ে বেশি watch হয়',
+                        '#️⃣ ৩-৫টা relevant hashtag ব্যবহার করো',
+                        '🕐 সকাল ৮টা বা রাত ৮টায় post করলে বেশি reach হয়',
+                        '❤️ অন্যদের video তে comment করলে তোমার reach বাড়ে',
+                        '🔄 প্রতিদিন post করলে algorithm তোমাকে বেশি দেখায়',
+                      ] : lang==='hi' ? [
+                        '📱 Vertical video ज्यादा लोगों तक पहुंचती है',
+                        '⏱ 30-60 सेकंड के वीडियो सबसे ज्यादा देखे जाते हैं',
+                        '#️⃣ 3-5 relevant hashtag इस्तेमाल करें',
+                        '🕐 सुबह 8 बजे या रात 8 बजे post करें',
+                        '❤️ दूसरों के video पर comment करने से reach बढ़ती है',
+                        '🔄 रोज post करने से algorithm आपको ज्यादा दिखाता है',
+                      ] : [
+                        '📱 Vertical videos reach more people',
+                        '⏱ 30-60 second videos get most watch time',
+                        '#️⃣ Use 3-5 relevant hashtags',
+                        '🕐 Post at 8 AM or 8 PM for maximum reach',
+                        '❤️ Commenting on others videos boosts your reach',
+                        '🔄 Daily posting makes algorithm show you more',
+                      ]).map((tip, i) => (
+                        <div key={i} style={{ fontSize:11, color:'#8892a4', padding:'4px 0', borderBottom: i < 5 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>{tip}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── VIDEO DETAIL VIEW ── */}
+                {monetizeView === 'videoDetail' && selectedVideo && (
+                  <div>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+                      <button onClick={()=>setMonetizeView('videos')} style={{ background:'rgba(255,255,255,0.06)', border:'none', borderRadius:10, padding:'8px 12px', color:'#eef2f7', fontSize:13, cursor:'pointer' }}>←</button>
+                      <div style={{ fontSize:14, fontWeight:800, color:'#eef2f7' }}>{tm('analytics',lang)}</div>
+                    </div>
 
                     {/* Video preview */}
                     <div style={{ background:'#0c1018', borderRadius:14, overflow:'hidden', marginBottom:14, aspectRatio:'9/16', maxHeight:280, position:'relative' }}>
