@@ -253,8 +253,10 @@ function Certificate({ inv, username, referralLink, onClose, nidFrontUrl }) {
           {/* Official Seal */}
           <div style={{ position:'absolute', bottom:60, right:16, width:60, height:60, borderRadius:'50%', background:'rgba(0,229,255,0.08)', border:'2px solid rgba(0,229,255,0.3)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', opacity:0.8 }}>
             <div style={{ fontSize:18 }}>🌐</div>
-            <div style={{ fontSize:6, color:'#00e5ff', fontWeight:700, textAlign:'center', lineHeight:1.2 }}>ECHO{"
-"}OFFICIAL</div>
+            <div style={{ fontSize:6, color:'#00e5ff', fontWeight:700, textAlign:'center', lineHeight:1.2 }}>
+  ECHO<br />
+  OFFICIAL
+</div>
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'20px' }}>
