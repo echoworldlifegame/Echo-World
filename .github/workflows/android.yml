@@ -16,12 +16,21 @@ jobs:
 
       - run: npm install -g @bubblewrap/cli
 
-      - run: |
+      - name: Restore keystore
+        run: |
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > echoworld.jks
 
-      - run: |
+      - name: Init TWA
+        run: |
           npx bubblewrap init \
-          --manifest=https://echo-world-psi.vercel.app/manifest.json
+          --manifest=https://echo-world-rho.vercel.app/manifest.json
 
-      - run: |
+      - name: Build AAB
+        run: |
           npx bubblewrap build
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: echoworld-aab
+          path: app-release-bundle.aab
