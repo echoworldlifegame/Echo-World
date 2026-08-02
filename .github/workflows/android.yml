@@ -1,0 +1,27 @@
+name: Build Android App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install -g @bubblewrap/cli
+
+      - run: |
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > echoworld.jks
+
+      - run: |
+          npx bubblewrap init \
+          --manifest=https://echo-world-psi.vercel.app/manifest.json
+
+      - run: |
+          npx bubblewrap build
