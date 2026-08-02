@@ -14,16 +14,17 @@ jobs:
         with:
           node-version: 20
 
-      - run: npm install -g @bubblewrap/cli
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
 
       - name: Restore keystore
         run: |
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > echoworld.jks
 
       - name: Init TWA
-  run: |
-    yes | npx bubblewrap init \
-    --manifest=https://echo-world-rho.vercel.app/manifest.json
+        run: |
+          yes | npx bubblewrap init \
+            --manifest=https://echo-world-rho.vercel.app/manifest.json
 
       - name: Build AAB
         run: |
