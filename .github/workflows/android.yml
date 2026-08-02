@@ -21,9 +21,9 @@ jobs:
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > echoworld.jks
 
       - name: Init TWA
-        run: |
-          npx bubblewrap init \
-          --manifest=https://echo-world-rho.vercel.app/manifest.json
+  run: |
+    yes | npx bubblewrap init \
+    --manifest=https://echo-world-rho.vercel.app/manifest.json
 
       - name: Build AAB
         run: |
