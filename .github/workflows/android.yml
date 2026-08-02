@@ -21,17 +21,25 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > echoworld.jks
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Init TWA
         run: |
-          yes | npx bubblewrap init \
-            --manifest=https://echo-world-rho.vercel.app/manifest.json
+          npx bubblewrap init \
+            --manifest=https://echo-world-rho.vercel.app/manifest.json \
+            --directory=twa
 
       - name: Build AAB
         run: |
+          cd twa
           npx bubblewrap build
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: echoworld-aab
-          path: app-release-bundle.aab
+          path: twa/**/*.aab
