@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.echoworld.app",
+      "sha256_cert_fingerprints": [
+        "A5:70:A5:CE:52:CA:A0:84:06:00:F9:ED:33:7D:12:A6:7E:E8:FA:5B:E5:29:AC:EF:A1:DC:08:51:AB:05:D2"
+      ]
+    }
+  }
+]
